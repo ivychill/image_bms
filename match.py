@@ -20,9 +20,9 @@ def match_img(image_path, Target, value):
 
     cv2.imshow('Detected', img_rgb)
     cv2.waitKey(0)
-    return pt
+
     # return img_rgb,pt,w,h
 image = ("imgout.jpg")
-Target = ('tt.jpg')
-value=0.99
+Target = ('ttt.jpg')
+value=0.9
 match_img(image,Target,value)
