@@ -8,4 +8,3 @@ if __name__ == "__main__":
     thread = threading.Thread(target = image_processor.rec_main)
     thread.start()
     rpc_server.register_rpc()
-    # time.sleep(300000)

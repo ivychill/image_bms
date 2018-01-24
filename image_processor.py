@@ -30,48 +30,37 @@ import string
 
 # global s #全局
 
-td_left = (0,0)
+td_topleft = (0,0)
 td_high = 0
 td_low = 0
-enemy_left =(0,0)
+enemy_topleft =(0,0)
 
 class ImageProcessor:
     def __init__(self):
         self.bms = BmsInterface()
     def rec_main(self):
-        # self.getImage("mfdleft")
-        self.command()
+        logger.info("image processor thread start")
         while True:
-            time.sleep(2)
-
-
-            if self.getImage("mfdleft"):
-                valid = self.getImage("mfdleft")
-                if valid==False:
-                    continue
-
+            time.sleep(0.1)
+            valid = self.getImage("mfdleft")
+            if valid:
                 self.match_enemy()
                 # pt_td,wide_td,height_td = self.match_td()
                 pt_td=self.match_td()
                 if pt_td:
-
-                        # line=self.detect_td_line(pt_td, wide_td, height_td)
+                    # line=self.detect_td_line(pt_td, wide_td, height_td)
                     line = self.detect_td_line(pt_td)
-                    if line==0:
+                    if line == 0:
                         self.move_td()
                         continue
-
                     else:
                         self.process_td(pt_td)
 
-
-                    # self.process_td(pt_td, wide_td, height_td)
-    def command(self):
-        self.bms.command_socket.sendto("K:329", self.bms.command_addr)
-        self.bms.command_socket.sendto("K:264", self.bms.command_addr)
+    # def command(self):
+    #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
+    #     self.bms.command_socket.sendto("K:264", self.bms.command_addr)
 
     def getImage(self, msg):
-
         self.bms.image_socket.send(msg)
         stringData = self.bms.image_socket.recv(1024*1024)
         aa = len(stringData)
@@ -82,30 +71,23 @@ class ImageProcessor:
             radar_img.write(hex_data)
             radar_img.close()
             valid=True
-            # try:
-            #     Image.open('imgout.bmp').verify()
-            # os.system("for i in *.bmp;do convert ${i} ${i%bmp}jpg;done")
             try:
+                #   Image.open('imgout.bmp').verify()
+                #   os.system("for i in *.bmp;do convert ${i} ${i%bmp}jpg;done")
                 os.system("convert imgout.bmp imgout.jpg")
             except OSError:
                 valid =False
-                print 'wwwwwww'
+                logger.error("convert bmp ")
             # time.sleep(0.5)
         return valid
 
-
-
         # logger.debug('valid: %s' % valid)
-
-
-
         # self.bms.image_socket.close()
         # img_rgb = cv2.imread('imgout.jpg')
         # self.img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
 
-
     def match_enemy(self,value=0.9):
-        global enemy_left
+        global enemy_topleft
         img_rgb=cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         Target=cv2.imread('./t4.jpg')
@@ -118,7 +100,7 @@ class ImageProcessor:
         # if not loc:
         #     return -1
         # else:
-            # self.enemy_left = pt
+            # self.enemy_topleft = pt
         if loc:
             for pt in zip(*loc[::-1]):
                cv2.rectangle(img_rgb, pt, (pt[0] + wide, pt[1] + height), (7, 249, 151), 2)
@@ -128,15 +110,15 @@ class ImageProcessor:
                # cv2.waitKey(20)
                # self.enemy_pt=pt
                # print self.enemy_pt
-               enemy_left = (int(pt[0]),int(pt[1]))
-               print enemy_left
-               # logger.debug('self.enemy_pt: %s' % (self.enemy_pt))
+               enemy_topleft = (int(pt[0]),int(pt[1]))
+               # return enemy_topleft
+               return None
+            enemy_topleft =(0,0)
 
         else:
+            enemy_topleft=(0,0)
             return None
 
-
-        # sys.exit(0)
 
     def match_td(self, value=0.7):
         img_rgb = cv2.imread('./imgout.jpg')
@@ -164,9 +146,11 @@ class ImageProcessor:
                 # cv2.waitKey(0)
                 # return pt_td,wide_td,height_td
                 return pt_td
-        else:
-            return None
+            pt_td = (0, 0)
 
+        else:
+            pt_td = (0, 0)
+            return None
 
 
     # def detect_td_line(self,pt_td,wide_td, height_td):
@@ -192,17 +176,14 @@ class ImageProcessor:
                 continue
 
 
-
-
-
     def move_td(self):
         self.bms.command_socket.sendto("K:101", self.bms.command_addr)
         self.bms.command_socket.sendto("K:103", self.bms.command_addr)
-        logger.debug('command_up: %s,command_left: %s'% ('K:101','K:103'))
+        logger.debug('command_up: %s,command_left: %s' % ('K:101','K:103'))
 
     # def process_td(self,pt_td,wide_td, height_td):
     def process_td(self, pt_td):
-        global td_left, td_high, td_low
+        global td_topleft, td_high, td_low
         image = Image.open('./imgout.jpg')
         # image = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         # box1 = (pt_td[0] + wide_td, pt_td[1] -4, pt_td[0] + wide_td + 40, pt_td[1] + 19)
@@ -217,61 +198,34 @@ class ImageProcessor:
         # cv2.waitKey(0)
         high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
         low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
-        # print("high: %s, low: %s" % (high, low))
+        logger.debug("high: %s, low: %s" % (high, low))
 
-        # td_left, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
-        # logger.debug('self.td_left: %s, self.td_high:%s, self.td_low:%s' % (self.td_left, self.td_high, self.td_low))
+        # td_topleft, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
+        # logger.debug('self.td_topleft: %s, self.td_high:%s, self.td_low:%s' % (self.td_topleft, self.td_high, self.td_low))
         # print(" low: %s" % (low))
         # region1.show()
         # region2.show()
         # region1.save("high.jpg")
         # region2.save("low.jpg")
 
-        # print td_left
-        # logger.debug('td_left: %s' % (pt_td))
-
-
-        high = re.match('^[-]?\d{2}$', high)
-        low = re.match('^[-]?\d{2}$',low )
-        if high:
-            high=high.group()
-            # print("high: %s" %(high))
+        matched_high = re.match('^[-]?\d{2}$', high)
+        matched_low = re.match('^[-]?\d{2}$', low )
+        if matched_high:
+            td_high = int(high)
         else:
-            # print high
+            logger.warn('match high fail')
             return False
 
-        if low:
-            low=low.group()
-            # print("low: %s" % (low))
+        if matched_low:
+            td_low = int(low)
         else:
+            logger.warn('match low fail')
             return False
 
-        if type(high) and type(low) is not str:
-            return False
-        else:
+        # logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
+        # print type(pt_td)
+        # logger.debug('td_topleft: %s' % (pt_td))
 
-            td_high, td_low =  int(high), int(low)
-            print td_high,td_low
-            logger.debug(' td_high: %d, td_low: %d' % ( high, low))
-        td_left = (int(pt_td[0]), int(pt_td[1]))
+        td_topleft = (int(pt_td[0]), int(pt_td[1]))
+        # logger.debug('td_topleft: %d' % (td_topleft))
 
-        # except OSError:
-        #     number = False
-        #     logger.debug('number: %s' % (number))
-        # return number
-
-
-
-
-
-        # self.td_left,self.td_high,self.td_low=pt_td,high,low
-        # logger.debug('self.td_left: %s, self.td_high:%s, self.td_low:%s' % (self.td_left,self.td_high,self.td_low))
-
-
-        # print self.td_left,self.td_high,self.td_low
-        # self.td_left=pt_td
-    # def get_td(self):
-    #     return self.pt_td
-    #
-    # def get_enemy_coord(self):
-    #     return self.pt
