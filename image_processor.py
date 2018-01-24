@@ -226,19 +226,23 @@ class ImageProcessor:
         # region2.show()
         # region1.save("high.jpg")
         # region2.save("low.jpg")
-        number=True
+
+        # print td_left
+        # logger.debug('td_left: %s' % (pt_td))
 
 
         high = re.match('^[-]?\d{2}$', high)
         low = re.match('^[-]?\d{2}$',low )
         if high:
             high=high.group()
-            print("high: %s" %(high))
+            # print("high: %s" %(high))
         else:
+            # print high
             return False
+
         if low:
             low=low.group()
-            print("low: %s" % (low))
+            # print("low: %s" % (low))
         else:
             return False
 
@@ -247,10 +251,10 @@ class ImageProcessor:
         else:
 
             td_high, td_low =  int(high), int(low)
-            logger.debug(' td_high: %d, td_low: %d' % ( td_high, td_low))
-
+            print td_high,td_low
+            logger.debug(' td_high: %d, td_low: %d' % ( high, low))
         td_left = (int(pt_td[0]), int(pt_td[1]))
-        logger.debug('td_left: %d' % (pt_td))
+
         # except OSError:
         #     number = False
         #     logger.debug('number: %s' % (number))
