@@ -25,11 +25,15 @@ import pytesseract
 import base64
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
+import re
+import string
 
 # global s #全局
 
-
+td_left = (0,0)
+td_high = 0
+td_low = 0
+enemy_left =(0,0)
 
 class ImageProcessor:
     def __init__(self):
@@ -69,9 +73,9 @@ class ImageProcessor:
         # print aa
         if len(stringData) > 0:
             hex_data=  base64.b64decode(stringData) #base64解码图片
-            leidaimg = open('imgout.bmp', 'wb')
-            leidaimg.write(hex_data)
-            leidaimg.close()
+            radar_img = open('imgout.bmp', 'wb')
+            radar_img.write(hex_data)
+            radar_img.close()
             valid=True
             # try:
             #     Image.open('imgout.bmp').verify()
@@ -96,6 +100,7 @@ class ImageProcessor:
 
 
     def match_enemy(self,value=0.9):
+        global enemy_left
         img_rgb=cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         Target=cv2.imread('./t4.jpg')
@@ -116,10 +121,14 @@ class ImageProcessor:
                cv2.rectangle(img_rgb, (pt[0] + wide, pt[1] + height - 1), (pt[0] + wide + 40, pt[1] + wide + 24), (7, 249, 151), 2)
                # cv2.imshow('Detected', img_rgb)
                # cv2.waitKey(20)
-               self.enemy_pt=pt
-               logger.debug('self.enemy_pt: %s' % (self.enemy_pt))
+               # self.enemy_pt=pt
+               # print self.enemy_pt
+               enemy_left = (int(pt[0]),int(pt[1]))
+               # logger.debug('self.enemy_pt: %s' % (self.enemy_pt))
+
         else:
             return None
+
 
         # sys.exit(0)
 
@@ -183,10 +192,11 @@ class ImageProcessor:
     def move_td(self):
         self.bms.command_socket.sendto("K:101", self.bms.command_addr)
         self.bms.command_socket.sendto("K:103", self.bms.command_addr)
-        logger.debug('command: %s'% ('K:101','K:103'))
+        logger.debug('command_up: %s,command_left: %s'% ('K:101','K:103'))
 
     # def process_td(self,pt_td,wide_td, height_td):
     def process_td(self, pt_td):
+        global td_left, td_high, td_low
         image = Image.open('./imgout.jpg')
         # image = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         # box1 = (pt_td[0] + wide_td, pt_td[1] -4, pt_td[0] + wide_td + 40, pt_td[1] + 19)
@@ -199,17 +209,42 @@ class ImageProcessor:
         # region1.show()
         # region2.show()
         # cv2.waitKey(0)
-        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
-        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
+        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.95')
+        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.95')
         print("high: %s, low: %s" % (high, low))
+
+        # td_left, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
+        # logger.debug('self.td_left: %s, self.td_high:%s, self.td_low:%s' % (self.td_left, self.td_high, self.td_low))
         # print(" low: %s" % (low))
         # region1.show()
         # region2.show()
-
         # region1.save("high.jpg")
         # region2.save("low.jpg")
-        self.td_left,self.td_high,self.td_low=pt_td,high,low
-        logger.debug('self.td_left: %s, self.td_high:%s, self.td_high:%s' % (self.td_left,self.td_high,self.td_low))
+        number=True
+
+
+        high = re.match('^[-]?\d{2}$', high)
+        low = re.match('^[-]?\d{2}$',low )
+        # print("high: %s, low: %s" % (high, low))
+        if type(high) and type(low) is not str:
+            return False
+        else:
+            td_left, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
+            logger.debug('td_left: %d, td_high: %d, td_low: %d' % (td_left, td_high, td_low))
+
+        # except OSError:
+        #     number = False
+        #     logger.debug('number: %s' % (number))
+        # return number
+
+
+
+
+
+        # self.td_left,self.td_high,self.td_low=pt_td,high,low
+        # logger.debug('self.td_left: %s, self.td_high:%s, self.td_low:%s' % (self.td_left,self.td_high,self.td_low))
+
+
         # print self.td_left,self.td_high,self.td_low
         # self.td_left=pt_td
     # def get_td(self):

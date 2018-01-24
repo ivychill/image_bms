@@ -12,13 +12,18 @@ def register_rpc():
     server.serve_forever()  # 启动服务器,并使其对这个连接可用
 
 def get_td():
-    td_left,td_high,td_low  = image_processor.td_left,image_processor.td_high,image_processor.td_low
+    # td_left,td_high,td_low  = image_processor.td_left[0], image_processor.td_left[1], image_processor.td_high,image_processor.td_low
+# def get_td():
+#     td_left,td_high,td_low  =  image_processor.process_td()
 
     # td_left=image_processor.td_left
-
-    return td_left,td_high,td_low
+    print "ddddddddddddddddddddd"
+    print type(image_processor.td_left[0]), type(image_processor.td_high)
+    print image_processor.td_left, image_processor.td_high,image_processor.td_low
+    return image_processor.td_left, image_processor.td_high,image_processor.td_low
 
 def get_enemy_coord():
-    enemy_left=image_processor.enemy_pt
+    # enemy_left=image_processor.enemy_pt
 
-    return enemy_left
+    print type(image_processor.enemy_left[0])
+    return image_processor.enemy_left
