@@ -12,23 +12,17 @@ import Image
 from log_config import *
 import time
 from bms_interface import *
-#from bitmap import BitMap
 import os
-import sys
-# import io,numpy
-# import requests
 from PIL import Image
-from io import BytesIO
 import numpy as np
 import cv2
 import pytesseract
 import base64
 from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 import re
-import string
+import threading
 
-# global s #全局
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 td_topleft = (0,0)
 td_high = 0
@@ -38,23 +32,35 @@ enemy_topleft =(0,0)
 class ImageProcessor:
     def __init__(self):
         self.bms = BmsInterface()
+        self.event_start = threading.Event()
+        self.event_stop = threading.Event()
+
     def rec_main(self):
-        logger.info("image processor thread start")
         while True:
-            time.sleep(0.1)
-            valid = self.getImage("mfdleft")
-            if valid:
-                self.match_enemy()
-                # pt_td,wide_td,height_td = self.match_td()
-                pt_td=self.match_td()
-                if pt_td:
-                    # line=self.detect_td_line(pt_td, wide_td, height_td)
-                    line = self.detect_td_line(pt_td)
-                    if line == 0:
-                        self.move_td()
-                        continue
-                    else:
-                        self.process_td(pt_td)
+            logger.warn("...waiting for start event...")
+            self.event_start.wait()
+            logger.warn("...start an episode...")
+
+            while True:
+                # time.sleep(0.1)
+                valid = self.getImage("mfdleft")
+                if valid:
+                    self.match_enemy()
+                    # pt_td,wide_td,height_td = self.match_td()
+                    pt_td=self.match_td()
+                    if pt_td:
+                        # line=self.detect_td_line(pt_td, wide_td, height_td)
+                        line = self.detect_td_line(pt_td)
+                        if line == 0:
+                            self.move_td()
+                            continue
+                        else:
+                            self.process_td(pt_td)
+
+                if self.event_stop.is_set():
+                    logger.warn("...stop an episode...")
+                    self.event_stop.clear()
+                    break
 
     # def command(self):
     #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
@@ -229,3 +235,10 @@ class ImageProcessor:
         td_topleft = (int(pt_td[0]), int(pt_td[1]))
         # logger.debug('td_topleft: %d' % (td_topleft))
 
+    def start(self):
+        logger.info("set event start...")
+        self.event_start.set()
+
+    def stop(self):
+        self.event_stop.set()
+        logger.info("set event stop...")
