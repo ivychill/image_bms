@@ -39,7 +39,6 @@ class ImageProcessor:
     def __init__(self):
         self.bms = BmsInterface()
     def rec_main(self):
-        # self.getImage("mfdleft")
         logger.info("image processor thread start")
         while True:
             time.sleep(0.1)
@@ -59,6 +58,10 @@ class ImageProcessor:
                         continue
                     else:
                         self.process_td(pt_td)
+
+    def command(self):
+        self.bms.command_socket.sendto("K:329", self.bms.command_addr)
+        self.bms.command_socket.sendto("K:264", self.bms.command_addr)
 
     def getImage(self, msg):
         self.bms.image_socket.send(msg)
@@ -190,9 +193,9 @@ class ImageProcessor:
         # region1.show()
         # region2.show()
         # cv2.waitKey(0)
-        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.95')
-        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.95')
-        print("high: %s, low: %s" % (high, low))
+        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
+        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
+        # print("high: %s, low: %s" % (high, low))
 
         # td_topleft, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
         # logger.debug('self.td_topleft: %s, self.td_high:%s, self.td_low:%s' % (self.td_topleft, self.td_high, self.td_low))
@@ -205,15 +208,27 @@ class ImageProcessor:
 
         high = re.match('^[-]?\d{2}$', high)
         low = re.match('^[-]?\d{2}$',low )
-        # print("high: %s, low: %s" % (high, low))
+        if high:
+            high=high.group()
+            print("high: %s" %(high))
+        else:
+            return False
+        if low:
+            low=low.group()
+            print("low: %s" % (low))
+        else:
+            return False
+
         if type(high) and type(low) is not str:
             return False
         else:
+
             td_high, td_low =  int(high), int(low)
             logger.debug(' td_high: %d, td_low: %d' % ( td_high, td_low))
 
         td_topleft = (int(pt_td[0]), int(pt_td[1]))
         logger.debug('td_topleft: %d' % (td_topleft))
+
         # except OSError:
         #     number = False
         #     logger.debug('number: %s' % (number))
