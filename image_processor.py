@@ -229,9 +229,11 @@ class ImageProcessor:
         if type(high) and type(low) is not str:
             return False
         else:
-            td_left, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
-            logger.debug('td_left: %d, td_high: %d, td_low: %d' % (td_left, td_high, td_low))
+            td_high, td_low =  int(high), int(low)
+            logger.debug(' td_high: %d, td_low: %d' % ( td_high, td_low))
 
+        td_left = (int(pt_td[0]), int(pt_td[1]))
+        logger.debug('td_left: %d' % (td_left))
         # except OSError:
         #     number = False
         #     logger.debug('number: %s' % (number))
