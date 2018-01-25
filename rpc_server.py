@@ -4,6 +4,7 @@
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import image_processor
+import time
 from log_config import *
 
 image_proc = None
@@ -11,8 +12,8 @@ image_proc = None
 def register_rpc(image_processor):
     global image_proc
     image_proc = image_processor
-    server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
-    # server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
+    # server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
+    server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
     server.register_function(get_td, "get_td")  # 注册is_even函数
     server.register_function(get_enemy_coord, "get_enemy_coord")
     server.register_function(start, "start")

@@ -37,34 +37,33 @@ class ImageProcessor:
 
     def rec_main(self):
         while True:
-            time.sleep(0.1)
-            valid = self.getImage("mfdleft")
-            if valid:
-                enemy_topleft=self.match_enemy()
-                # pt_td,wide_td,height_td = self.match_td()
-                pt_td=self.match_td()
-                if pt_td:
-                    # line=self.detect_td_line(pt_td, wide_td, height_td)
-                    line = self.detect_td_line(pt_td)
-                    if line == 0:
-                        if not enemy_topleft:
-                            self.move_td()
-                            continue
-                    else:
-                        self.process_td(pt_td)
-                lock_toplef=self.match
+            logger.warn("...waiting for start event...")
+            self.event_start.wait()
+            time.sleep(12)
+            logger.warn("...start an episode...")
+            while True:
+                time.sleep(0.1)
+                valid = self.getImage("mfdleft")
+                if valid:
+                    enemy_topleft=self.match_enemy()
+                    # pt_td,wide_td,height_td = self.match_td()
+                    pt_td=self.match_td()
+                    if pt_td:
+                        # line=self.detect_td_line(pt_td, wide_td, height_td)
+                        line = self.detect_td_line(pt_td)
+                        if line == 0:
+                            if not enemy_topleft:
+                                self.move_td()
+                                continue
+                        else:
+                            self.process_td(pt_td)
 
-            # logger.warn("...waiting for start event...")
-            # self.event_start.wait()
-            # logger.warn("...start an episode...")
-            # if self.event_stop.is_set():
-            #     logger.warn("...stop an episode...")
-            #     self.event_stop.clear()
-            #     break
+                    # lock_toplef = self.match
 
-
-
-
+                if self.event_stop.is_set():
+                    logger.warn("...stop an episode...")
+                    self.event_stop.clear()
+                    break
 
     # def command(self):
     #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
@@ -85,7 +84,6 @@ class ImageProcessor:
                 #   Image.open('imgout.bmp').verify()
                 #   os.system("for i in *.bmp;do convert ${i} ${i%bmp}jpg;done")
                 os.system("convert imgout.bmp imgout.jpg")
-                print'aaaa'
             except OSError:
                 valid =False
                 logger.error("convert bmp ")
@@ -231,16 +229,7 @@ class ImageProcessor:
         # logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
         # print type(pt_td)
         # logger.debug('td_topleft: %s' % (pt_td))
-
-
         # logger.debug('td_topleft: %d' % (td_topleft))
-
-
-
-
-   def lock(self):
-       return lock_topleft
-
 
     def start(self):
         logger.info("set event start...")
