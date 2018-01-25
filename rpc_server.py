@@ -21,5 +21,5 @@ def get_td():
 def get_enemy_coord():
     # print type(image_processor.enemy_topleft[0])
     print image_processor.enemy_topleft
-    logger.debug("enemy_topleft: %s,%s" % (image_processor.enemy_topleft))
+    # logger.debug("enemy_topleft: %s" % (image_processor.enemy_topleft))
     return image_processor.enemy_topleft

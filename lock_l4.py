@@ -15,11 +15,11 @@ def match_t4(image_path, Target, value):
     for p4 in zip(*loc[::-1]):
         cv2.rectangle(img_rgb,  p4, (p4[0] + w, p4[1] + h), (7, 249, 151), 2)
 
-    # cv2.imshow('Detected', img_rgb)
-    # cv2.waitKey(0)
+    cv2.imshow('Rpi', img_rgb)
+    cv2.waitKey(0)
     return p4
     # return
-image = ("lock.jpg")
+image = ("Rpi.jpg")
 Target = ('l4.jpg')
-value=0.99
+value=0.85
 match_t4(image,Target,value)

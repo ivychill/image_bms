@@ -15,11 +15,11 @@ def match_t3(image_path, Target, value):
     for p3 in zip(*loc[::-1]):
         cv2.rectangle(img_rgb,  p3, (p3[0] + w, p3[1] + h), (7, 249, 151), 2)
 
-    # cv2.imshow('Detected', img_rgb)
-    # cv2.waitKey(0)
+    cv2.imshow('Raero', img_rgb)
+    cv2.waitKey(0)
     return p3
     # return
-image = ("lock.jpg")
+image = ("Rpi.jpg")
 Target = ('l3.jpg')
 value=0.99
 match_t3(image,Target,value)
