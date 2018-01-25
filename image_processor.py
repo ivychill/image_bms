@@ -12,23 +12,17 @@ import Image
 from log_config import *
 import time
 from bms_interface import *
-#from bitmap import BitMap
 import os
-import sys
-# import io,numpy
-# import requests
 from PIL import Image
-from io import BytesIO
 import numpy as np
 import cv2
 import pytesseract
 import base64
 from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 import re
-import string
+import threading
 
-# global s #全局
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 td_topleft = None
 td_high = 0
@@ -38,8 +32,10 @@ enemy_topleft =None
 class ImageProcessor:
     def __init__(self):
         self.bms = BmsInterface()
+        self.event_start = threading.Event()
+        self.event_stop = threading.Event()
+
     def rec_main(self):
-        logger.info("image processor thread start")
         while True:
             time.sleep(0.1)
             valid = self.getImage("mfdleft")
@@ -56,6 +52,18 @@ class ImageProcessor:
                             continue
                     else:
                         self.process_td(pt_td)
+                lock_toplef=self.match
+
+            # logger.warn("...waiting for start event...")
+            # self.event_start.wait()
+            # logger.warn("...start an episode...")
+            # if self.event_stop.is_set():
+            #     logger.warn("...stop an episode...")
+            #     self.event_stop.clear()
+            #     break
+
+
+
 
 
     # def command(self):
@@ -84,25 +92,22 @@ class ImageProcessor:
             # time.sleep(0.5)
         return valid
 
-        # logger.debug('valid: %s' % valid)
-        # self.bms.image_socket.close()
-        # img_rgb = cv2.imread('imgout.jpg')
-        # self.img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+
 
     def match_enemy(self,value=0.9):
         global enemy_topleft
-        img_rgb=cv2.imread('./imgout.jpg')
+        img_rgb = cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        Target=cv2.imread('./t4.jpg')
+        Target=cv2.imread('./enemy.jpg')
         template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
         wide, height = template.shape[::-1]
-        self.value=value
+        self.value = value
         threshold = value
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
         loc = np.where(res >= threshold)
 
         if len(loc[0]) != 0:
-            enemy_pt=loc[0][3],loc[1][3]
+            enemy_pt=loc[1][0],loc[0][0]
             print enemy_topleft
             enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
             return enemy_topleft
@@ -111,21 +116,22 @@ class ImageProcessor:
             return None
 
 
-    def match_td(self, value=0.8):
+    def match_td(self, value=0.7):
         global td_topleft
         img_rgb = cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        Target = cv2.imread('./ttt.jpg')
+        # Target = cv2.imread('./template/td.jpg')
+        Target = cv2.imread('./td.jpg')
         template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
         wide_td, height_td = template.shape[::-1]
-        self.wide_td=wide_td
-        self.height_td=height_td
+        self.wide_td = wide_td
+        self.height_td = height_td
         self.value = value
         threshold = value
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
         loc = np.where(res >= threshold)
         if len(loc[0]) != 0:
-            pt_td=loc[0][3],loc[1][3]
+            pt_td=loc[1][0],loc[0][0]
             # cv2.rectangle(img_rgb, pt_td, (pt_td[0] + wide_td, pt_td[1] + height_td), (7, 249, 151), 2)
             # cv2.imshow('pt_td',img_rgb)
             # cv2.waitKey(0)
@@ -229,3 +235,17 @@ class ImageProcessor:
 
         # logger.debug('td_topleft: %d' % (td_topleft))
 
+
+
+
+   def lock(self):
+       return lock_topleft
+
+
+    def start(self):
+        logger.info("set event start...")
+        self.event_start.set()
+
+    def stop(self):
+        self.event_stop.set()
+        logger.info("set event stop...")
