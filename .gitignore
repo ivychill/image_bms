@@ -109,3 +109,5 @@ monitor/
 *.jpg
 *.jpeg
 *.bmp
+!enemy.jpg
+!td.jpg

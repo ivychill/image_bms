@@ -94,12 +94,12 @@ class ImageProcessor:
 
     def match_enemy(self,value=0.9):
         global enemy_topleft
-        img_rgb=cv2.imread('./imgout.jpg')
+        img_rgb = cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        Target=cv2.imread('./t4.jpg')
+        Target=cv2.imread('./template/enemy.jpg')
         template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
         wide, height = template.shape[::-1]
-        self.value=value
+        self.value = value
         threshold = value
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
         loc = np.where(res >= threshold)
@@ -129,11 +129,11 @@ class ImageProcessor:
     def match_td(self, value=0.7):
         img_rgb = cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        Target = cv2.imread('./ttt.jpg')
+        Target = cv2.imread('./template/td.jpg')
         template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
         wide_td, height_td = template.shape[::-1]
-        self.wide_td=wide_td
-        self.height_td=height_td
+        self.wide_td = wide_td
+        self.height_td = height_td
         self.value = value
         threshold = value
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
