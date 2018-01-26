@@ -252,14 +252,12 @@ class ImageProcessor:
         else:
             logger.warn('match high fail')
             td_high = None
-            return False
 
         if matched_low is not None:
             td_low = int(low)
         else:
             logger.warn('match low fail')
             td_low = None
-            return False
 
         logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
 
