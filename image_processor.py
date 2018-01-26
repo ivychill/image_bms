@@ -81,7 +81,7 @@ class ImageProcessor:
                 if pt_td is not None:
                     line = self.detect_td_line(pt_td)
                     if line == 0:
-                        if not enemy_topleft:
+                        if enemy_topleft is None:
                             self.move_td()
                             continue
                     else:
