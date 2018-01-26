@@ -248,7 +248,6 @@ class ImageProcessor:
 
         if matched_high is not None:
             td_high = int(high)
-
         else:
             logger.warn('match high fail')
             td_high = None
