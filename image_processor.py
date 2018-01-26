@@ -41,6 +41,36 @@ class ImageProcessor:
         self.event_start = threading.Event()
         self.event_stop = threading.Event()
 
+    def ai_main(self):
+        while True:
+            logger.warn("...waiting for start event...")
+            self.event_start.wait()
+            time.sleep(12)
+            logger.warn("...start an episode...")
+            while True:
+                time.sleep(0.1)
+                valid = self.getImage("mfdleft")
+                if valid:
+                    enemy_topleft=self.match_enemy()
+                    # pt_td,wide_td,height_td = self.match_td()
+                    pt_td=self.match_td()
+                    if pt_td:
+                        # line=self.detect_td_line(pt_td, wide_td, height_td)
+                        line = self.detect_td_line(pt_td)
+                        if line == 0:
+                            if not enemy_topleft:
+                                self.move_td()
+                                continue
+                        else:
+                            self.process_td(pt_td)
+
+                    # lock_toplef = self.match
+
+                if self.event_stop.is_set():
+                    logger.warn("...stop an episode...")
+                    self.event_stop.clear()
+                    break
+
     def rec_main(self):
         while True:
             time.sleep(0.1)
@@ -72,6 +102,10 @@ class ImageProcessor:
             #     self.event_stop.clear()
             #     break
 
+    # def command(self):
+    #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
+    #     self.bms.command_socket.sendto("K:264", self.bms.command_addr)
+
 
     def getImage(self, msg):
         self.bms.image_socket.send(msg)
@@ -86,7 +120,6 @@ class ImageProcessor:
             valid=True
             try:
                 os.system("convert imgout.bmp imgout.jpg")
-                print'aaaa'
             except OSError:
                 valid =False
                 logger.error("convert bmp ")
@@ -229,9 +262,6 @@ class ImageProcessor:
             return False
 
         logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
-        # print type(pt_td)
-        # # logger.debug('td_topleft: %s' % (pt_td))
-        # logger.debug('td_topleft: %d' % (td_topleft))
 
 
     def match_lock(self,value=0.99):
@@ -333,9 +363,6 @@ class ImageProcessor:
             print 'Rtr_topleft is %d' % (Rtr_topleft)
         else:
             Rtr_topleft=0
-
-
-
 
     def start(self):
         logger.info("set event start...")
