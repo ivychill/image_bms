@@ -25,7 +25,7 @@ def register_rpc(image_processor):
     server.serve_forever()  # 启动服务器,并使其对这个连接可用
 
 def get_td():
-    logger.debug("td_topleft: %s" % (image_processor.td_topleft))
+    # logger.debug("td_topleft: %s" % (image_processor.td_topleft))
     return image_processor.td_topleft
 
 def get_td_high_low():
