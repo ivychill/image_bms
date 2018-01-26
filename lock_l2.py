@@ -19,7 +19,7 @@ def match_t2(image_path, Target, value):
     cv2.waitKey(0)
     return p2
     # return
-image = ("Rpi.jpg")
-Target = ('l2.jpg')
+image = ("imgout.jpg")
+Target = ('Ropt_label.jpg')
 value=0.6
 match_t2(image,Target,value)

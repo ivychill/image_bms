@@ -20,7 +20,7 @@ def match_t1(image_path, Target, value):
     return p1
     # return
 
-image = ("Rpi.jpg")
-Target = ('l1.jpg')
-value=0.68
+image = ("imgout.jpg")
+Target = ('Index_label.jpg')
+value=0.75
 match_t1(image,Target,value)

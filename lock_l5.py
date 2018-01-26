@@ -19,7 +19,7 @@ def match_t5(image_path, Target, value):
     cv2.waitKey(0)
     return p5
     # return
-image = ("Rpi.jpg")
-Target = ('l5.jpg')
+image = ("imgout.jpg")
+Target = ('Rtr_label.jpg')
 value=0.85
 match_t5(image,Target,value)

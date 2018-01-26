@@ -25,9 +25,15 @@ import threading
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 td_topleft = None
-td_high = 0
-td_low = 0
-enemy_topleft =None
+td_high = None
+td_low = None
+enemy_topleft = None
+
+lock_topleft=None
+Index_topleft=0
+Ropt_topleft=0
+Rpi_topleft=0
+Rtr_topleft=0
 
 class ImageProcessor:
     def __init__(self):
@@ -40,11 +46,9 @@ class ImageProcessor:
             time.sleep(0.1)
             valid = self.getImage("mfdleft")
             if valid:
-                enemy_topleft=self.match_enemy()
-                # pt_td,wide_td,height_td = self.match_td()
-                pt_td=self.match_td()
-                if pt_td:
-                    # line=self.detect_td_line(pt_td, wide_td, height_td)
+                enemy_topleft = self.match_enemy()
+                pt_td = self.match_td()
+                if pt_td is not None:
                     line = self.detect_td_line(pt_td)
                     if line == 0:
                         if not enemy_topleft:
@@ -52,7 +56,13 @@ class ImageProcessor:
                             continue
                     else:
                         self.process_td(pt_td)
-                lock_toplef=self.match
+                lock_topleft = self.match_lock()
+                if lock_topleft is not None:
+                    self.match_Index()
+                    self.match_Ropt()
+                    self.match_Rpi()
+                    self.match_Rtr()
+
 
             # logger.warn("...waiting for start event...")
             # self.event_start.wait()
@@ -62,13 +72,6 @@ class ImageProcessor:
             #     self.event_stop.clear()
             #     break
 
-
-
-
-
-    # def command(self):
-    #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
-    #     self.bms.command_socket.sendto("K:264", self.bms.command_addr)
 
     def getImage(self, msg):
         self.bms.image_socket.send(msg)
@@ -82,8 +85,6 @@ class ImageProcessor:
             radar_img.close()
             valid=True
             try:
-                #   Image.open('imgout.bmp').verify()
-                #   os.system("for i in *.bmp;do convert ${i} ${i%bmp}jpg;done")
                 os.system("convert imgout.bmp imgout.jpg")
                 print'aaaa'
             except OSError:
@@ -91,7 +92,6 @@ class ImageProcessor:
                 logger.error("convert bmp ")
             # time.sleep(0.5)
         return valid
-
 
 
     def match_enemy(self,value=0.9):
@@ -137,16 +137,12 @@ class ImageProcessor:
             # cv2.waitKey(0)
             print pt_td
             td_topleft = (int(pt_td[0]),int(pt_td[1]))
-
             return pt_td
         else:
-            pt_td = None
+            td_topleft = None
             return None
 
-
-    # def detect_td_line(self,pt_td,wide_td, height_td):
     def detect_td_line(self, pt_td):
-
         img_rgb = cv2.imread('./imgout.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         gaus = cv2.GaussianBlur(img_gray, (3, 3), 0)
@@ -205,41 +201,140 @@ class ImageProcessor:
         high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
         low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
         logger.debug("high: %s, low: %s" % (high, low))
-
-        # td_topleft, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
-        # logger.debug('self.td_topleft: %s, self.td_high:%s, self.td_low:%s' % (self.td_topleft, self.td_high, self.td_low))
-        # print(" low: %s" % (low))
-        # region1.show()
-        # region2.show()
-        # region1.save("high.jpg")
-        # region2.save("low.jpg")
-
+        #
+        # # td_topleft, td_high, td_low = (int(pt_td[0]), int(pt_td[1])), int(high), int(low)
+        # # logger.debug('self.td_topleft: %s, self.td_high:%s, self.td_low:%s' % (self.td_topleft, self.td_high, self.td_low))
+        # # print(" low: %s" % (low))
+        # # region1.show()
+        # # region2.show()
+        # # region1.save("high.jpg")
+        # # region2.save("low.jpg")
+        #
         matched_high = re.match('^[-]?\d{2}$', high)
         matched_low = re.match('^[-]?\d{2}$', low )
-        if matched_high:
+
+        if matched_high is not None:
             td_high = int(high)
+
         else:
             logger.warn('match high fail')
+            td_high = None
             return False
 
-        if matched_low:
+        if matched_low is not None:
             td_low = int(low)
         else:
             logger.warn('match low fail')
+            td_low = None
             return False
 
-        # logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
+        logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
         # print type(pt_td)
-        # logger.debug('td_topleft: %s' % (pt_td))
-
-
+        # # logger.debug('td_topleft: %s' % (pt_td))
         # logger.debug('td_topleft: %d' % (td_topleft))
 
 
+    def match_lock(self,value=0.99):
+        global lock_topleft
+        img_rgb = cv2.imread('./imgout.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./lock_lable.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value = value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) != 0:
+            pt_lock = loc[1][0], loc[0][0]
+            lock_topleft = (int(pt_lock[0]), int(pt_lock[1]))
+            print lock_topleft
+            return lock_topleft
+        else:
+            lock_topleft = None
+            return None
 
 
-   def lock(self):
-       return lock_topleft
+    def match_Index(self,value=0.75):
+        global Index_topleft
+        img_rgb = cv2.imread('./imgout.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./Index_label.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value=value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) != 0:
+            pt_Index=loc[1][0],loc[0][0]
+            Index_topleft= int(pt_Index[1])
+            print "Index_topleft is %d" % (Index_topleft)
+        else:
+            Index_topleft=0
+
+
+    def match_Ropt(self,value=0.6):
+        global Ropt_topleft
+        img_rgb = cv2.imread('./imgout.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./Ropt_label.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value=value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) != 0:
+            pt_Ropt=loc[1][0],loc[0][0]
+            Ropt_topleft= int(pt_Ropt[1])
+            print "Ropt_topleft is %d" % (Ropt_topleft)
+        else:
+            Ropt_topleft=0
+
+
+    def match_Rpi(self,value=0.7):
+        global Rpi_topleft
+        img_rgb = cv2.imread('./imgout.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./Rpi_label.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value=value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) != 0:
+            for pt_Rpi in loc[0][:-1]:
+                if pt_Rpi > 220:
+            # pt_Rpi=loc[1][0],loc[0][0]
+                    Rpi_topleft= int(pt_Rpi)
+                    print 'Rpi_topleft is %d' % (Rpi_topleft)
+                    break
+
+        else:
+            Rpi_topleft=0
+
+
+    def match_Rtr(self,value=0.85):
+        global Rtr_topleft
+        img_rgb = cv2.imread('./imgout.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./Rtr_label.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value=value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) != 0:
+            pt_Rtr=loc[1][0],loc[0][0]
+            Rtr_topleft=int(pt_Rtr[1])
+            print 'Rtr_topleft is %d' % (Rtr_topleft)
+        else:
+            Rtr_topleft=0
+
+
 
 
     def start(self):

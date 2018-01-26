@@ -12,14 +12,27 @@ def match_t4(image_path, Target, value):
     threshold = value
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
     loc = np.where(res >= threshold)
-    for p4 in zip(*loc[::-1]):
-        cv2.rectangle(img_rgb,  p4, (p4[0] + w, p4[1] + h), (7, 249, 151), 2)
+    for p4 in loc[::-1]:
+        for p4 in loc[::-1]:
+            if loc[0][:-1]>220:
 
-    cv2.imshow('Rpi', img_rgb)
-    cv2.waitKey(0)
-    return p4
+
+                print p4
+                cv2.rectangle(img_rgb, p4, (p4[0] + w, p4[1] + h), (7, 249, 151), 2)
+                cv2.imshow('Rpi', img_rgb)
+                cv2.waitKey(0)
+                return p4
+
+
+
+    # for p4 in zip(*loc[::-1]):
+
+
+
+
+    # return p4
     # return
-image = ("Rpi.jpg")
-Target = ('l4.jpg')
+image = ("./imgout.jpg")
+Target = ('Rpi_label.jpg')
 value=0.85
 match_t4(image,Target,value)
