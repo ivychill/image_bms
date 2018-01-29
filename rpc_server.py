@@ -12,8 +12,8 @@ image_proc = None
 def register_rpc(image_processor):
     global image_proc
     image_proc = image_processor
-    # server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
-    server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
+    server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
+    # server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
     server.register_function(get_td, "get_td")  # 注册is_even函数
     server.register_function(get_td_high_low, "get_td_high_low")
     server.register_function(get_enemy_coord, "get_enemy_coord")
@@ -21,6 +21,7 @@ def register_rpc(image_processor):
     server.register_function(get_Ropt, "get_Ropt")
     server.register_function(get_Rpi, "get_Rpi")
     server.register_function(get_Rtr, "get_Rtr")
+    server.register_function(get_miss_clock, "get_miss_clock")
     server.register_function(start, "start")
     server.register_function(stop, "stop")
     server.serve_forever()  # 启动服务器,并使其对这个连接可用
@@ -54,6 +55,10 @@ def get_Rpi():
 def get_Rtr():
     print image_processor.Rtr_topleft
     return image_processor.Rtr_topleft
+
+def get_miss_clock():
+    print image_processor.miss_clock_digit,image_processor.fcr_nose_up
+    return image_processor.miss_clock_digit,image_processor.fcr_nose_up
 
 def start():
     logger.info("started...")
