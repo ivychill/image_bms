@@ -257,6 +257,10 @@ class ImageProcessor:
 
         logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
 
+        if td_high is None or td_low is None:
+            return False
+        else:
+            return True
 
     def match_lock(self,value=0.99):
         global lock_topleft
