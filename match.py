@@ -8,8 +8,11 @@ def match_img(image_path, Target, value):
     w, h = template.shape[::-1]
     threshold = value
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-    loc = np.where(res >= threshold)
-    for pt in zip(*loc[::-1]):
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
+    if maxVal >= threshold:
+        pt = maxLoc
+    # loc = np.where(res >= threshold)
+    # for pt in zip(*loc[::-1]):
         cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (7, 249, 151), 2)
     #     cv2.rectangle(img_rgb, (pt[0] + w + 40, pt[1] + h + 18), (pt[0] + w + 40+43,pt[1] + h+18+66),(7, 249, 151), 2)
     #     cv2.rectangle(img_rgb, (pt[0] + w + 40, pt[1] -10-66), (pt[0] + w + 40 + 43, pt[1] -10),(7, 249, 151), 2)
@@ -22,7 +25,7 @@ def match_img(image_path, Target, value):
     cv2.waitKey(0)
 
     # return img_rgb,pt,w,h
-image = ("imgout.jpg")
-Target = ('ttt.jpg')
+image = ("imagout.jpg")
+Target = ('td.jpg')
 value=0.9
 match_img(image,Target,value)

@@ -11,9 +11,11 @@ def match_t1(image_path, Target, value):
     w, h = template.shape[::-1]
     threshold = value
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-    loc = np.where(res >= threshold)
-    for p1 in zip(*loc[::-1]):
-        cv2.rectangle(img_rgb, p1, (p1[0] + w, p1[1] + h), (7, 249, 151), 2)
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
+    p1=maxLoc
+    # loc = np.where(res >= threshold)
+    # for p1 in zip(*loc[::-1]):
+    cv2.rectangle(img_rgb, p1, (p1[0] + w, p1[1] + h), (7, 249, 151), 2)
 
     cv2.imshow('Index', img_rgb)
     cv2.waitKey(0)

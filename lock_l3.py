@@ -11,15 +11,17 @@ def match_t3(image_path, Target, value):
     w, h = template.shape[::-1]
     threshold = value
     res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-    loc = np.where(res >= threshold)
-    for p3 in zip(*loc[::-1]):
-        cv2.rectangle(img_rgb,  p3, (p3[0] + w, p3[1] + h), (7, 249, 151), 2)
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
+    p3 = maxLoc
+    # loc = np.where(res >= threshold)
+    # for p3 in zip(*loc[::-1]):
+    cv2.rectangle(img_rgb,  p3, (p3[0] + w, p3[1] + h), (7, 249, 151), 2)
 
     cv2.imshow('Raero', img_rgb)
     cv2.waitKey(0)
     return p3
     # return
-image = ("Rpi.jpg")
-Target = ('l3.jpg')
+image = ("Rtr.jpg")
+Target = ('lock_label.jpg')
 value=0.99
 match_t3(image,Target,value)
