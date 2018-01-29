@@ -56,8 +56,9 @@ class ImageProcessor:
                     enemy_topleft=self.match_enemy()
                     # pt_td,wide_td,height_td = self.match_td()
                     pt_td=self.match_td()
+
                     if enemy_topleft is None:
-                        if pt_td:
+                        if pt_td is not None:
                             line = self.detect_td_line(pt_td)
                             if line == 0:
                                 self.move_td()
@@ -67,7 +68,6 @@ class ImageProcessor:
                                 valid_rec=self.rec_high_low(high,low)
                                 if valid_rec:
                                     self.move_td()
-
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -81,8 +81,9 @@ class ImageProcessor:
             if valid_Lmfd:
                 enemy_topleft = self.match_enemy()
                 pt_td = self.match_td()
+
                 if enemy_topleft is None:
-                    if pt_td:
+                    if pt_td is not None:
                         line = self.detect_td_line(pt_td)
                         if line == 0:
                             self.move_td()
@@ -189,6 +190,7 @@ class ImageProcessor:
             # cv2.waitKey(0)
             print pt_td
             td_topleft = (int(pt_td[0]),int(pt_td[1]))
+
             return pt_td
         else:
             td_topleft = None
@@ -256,17 +258,23 @@ class ImageProcessor:
         box2 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 40, pt_td[1] + self.height_td + 24)
         region1 = image.crop(box1)
         region2 = image.crop(box2)
-        # region2.save('region2.jpg')
+        region1.save("high.jpg")
+        region2.save("low.jpg")
         # region1.show()
         # region2.show()
-        # cv2.waitKey(0)
-        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
-        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.98')
+
+        # matcher_good_threshold      0.125
+        # matcher_great_threshold     0
+        # matcher_perfect_threshold   0.02
+        # matcher_bad_match_pad       0.15
+        # high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        # low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
+        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
         logger.debug("high: %s, low: %s" % (high, low))
         region1.save("high.jpg")
         region2.save("low.jpg")
         return high,low
-
 
     def rec_high_low(self,high,low):
         global td_high, td_low
