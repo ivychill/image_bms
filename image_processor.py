@@ -55,26 +55,24 @@ class ImageProcessor:
                 if valid_Lmfd:
                     pt_td = self.match_td()
                     enemy_topleft = self.match_enemy()
-                    lock_topleft = self.match_lock()
-                    if lock_topleft is None:
-                        if enemy_topleft is None:
-                            if pt_td is not None:
-                                line = self.detect_td_line(pt_td)
-                                if line == 0:
-                                    self.move_td()
-                                    continue
-                                else:
-                                    self.crop_high(pt_td)
-                                    self.crop_low(pt_td)
-                                    high = self.rec_high()
-                                    low = self.rec_low()
-                                    valid_rec = self.rec_high_low(high, low)
-                                    if valid_rec:
-                                        self.move_td()
-                                        continue
-                            else:
+                    if enemy_topleft is None:
+                        if pt_td is not None:
+                            line = self.detect_td_line(pt_td)
+                            if line == 0:
                                 self.move_td()
                                 continue
+                            else:
+                                self.crop_high(pt_td)
+                                self.crop_low(pt_td)
+                                high = self.rec_high()
+                                low = self.rec_low()
+                                valid_rec = self.rec_high_low(high, low)
+                                if valid_rec:
+                                    self.move_td()
+                                    continue
+                        else:
+                            self.move_td()
+                            continue
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -159,9 +157,6 @@ class ImageProcessor:
         return valid_Lmfd
 
 
-
-
-
     def match_enemy(self,value=0.9):
         global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -240,19 +235,19 @@ class ImageProcessor:
 
     def move_td(self):
         n = random()
-        logger.debug('randge: %s' % (n))
+        # logger.debug('rand: %s' % (n))
         if 0.0 <= n <=0.25:
             self.bms.command_socket.sendto("K:101", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:101'))
+            # logger.debug('command_up: %s' % ('K:101'))
         elif 0.25 < n <=0.5:
             self.bms.command_socket.sendto("K:102", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:102'))
+            # logger.debug('command_up: %s' % ('K:102'))
         elif 0.5 <n <=0.75:
             self.bms.command_socket.sendto("K:103", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:103'))
+            # logger.debug('command_up: %s' % ('K:103'))
         else:
             self.bms.command_socket.sendto("K:104", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:104'))
+            # logger.debug('command_up: %s' % ('K:104'))
         # if 0 < pt_td[0] < 255 and 0 < pt_td[1] < 255:
         #     self.bms.command_socket.sendto("K:102", self.bms.command_addr)
         #     self.bms.command_socket.sendto("K:104", self.bms.command_addr)
@@ -341,7 +336,7 @@ class ImageProcessor:
         rec_low2 = pytesseract.image_to_string(region2,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
         rec_low3 = pytesseract.image_to_string(region3,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
         low = rec_low1+rec_low2+rec_low3
-        logger.debug("low %s" % (low))
+        logger.debug("low: %s" % (low))
         return low
 
     def rec_high_low(self,high,low):
