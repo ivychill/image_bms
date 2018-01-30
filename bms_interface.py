@@ -4,8 +4,8 @@ class BmsInterface:
     def __init__(self):
         # try:
         self.image_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.adress = ("192.168.24.92", 13000)
-        # self.adress = ("192.168.20.122", 13000)
+        # self.adress = ("192.168.24.92", 13000)
+        self.adress = ("192.168.20.122", 13000)
         self.image_socket.connect(self.adress)
         # except Exception, e:
         #     return 0

@@ -53,24 +53,28 @@ class ImageProcessor:
                 time.sleep(0.1)
                 valid_Lmfd = self.getImage_Lmfd("mfdleft")
                 if valid_Lmfd:
-                    enemy_topleft=self.match_enemy()
-                    # pt_td,wide_td,height_td = self.match_td()
-                    pt_td=self.match_td()
-                    if enemy_topleft is None:
-                        if pt_td is not None:
-                            line = self.detect_td_line(pt_td)
-                            if line == 0:
-                                self.move_td()
-                                continue
-                            else:
-                                high,low=self.process_td(pt_td)
-                                valid_rec=self.rec_high_low(high,low)
-                                if valid_rec:
+                    pt_td = self.match_td()
+                    enemy_topleft = self.match_enemy()
+                    lock_topleft = self.match_lock()
+                    if lock_topleft is None:
+                        if enemy_topleft is None:
+                            if pt_td is not None:
+                                line = self.detect_td_line(pt_td)
+                                if line == 0:
                                     self.move_td()
                                     continue
-                        else:
-                            self.move_td()
-                            continue
+                                else:
+                                    self.crop_high(pt_td)
+                                    self.crop_low(pt_td)
+                                    high = self.rec_high()
+                                    low = self.rec_low()
+                                    valid_rec = self.rec_high_low(high, low)
+                                    if valid_rec:
+                                        self.move_td()
+                                        continue
+                            else:
+                                self.move_td()
+                                continue
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -83,25 +87,26 @@ class ImageProcessor:
             time.sleep(0.1)
             valid_Lmfd = self.getImage_Lmfd("mfdleft")
             if valid_Lmfd:
-                enemy_topleft = self.match_enemy()
                 pt_td = self.match_td()
+                enemy_topleft = self.match_enemy()
                 lock_topleft = self.match_lock()
                 if lock_topleft is None:
                     if enemy_topleft is None:
                         if pt_td is not None:
                             line = self.detect_td_line(pt_td)
                             if line == 0:
-                                self.move_td()
-                                continue
-                            else:
-                                self.crop_high(pt_td)
-                                self.crop_low(pt_td)
-                                high = self.rec_high()
-                                low = self.rec_low()
-                                valid_rec = self.rec_high_low(high, low)
-                                if valid_rec:
                                     self.move_td()
                                     continue
+                            else:
+                                    self.crop_high(pt_td)
+                                    self.crop_low(pt_td)
+                                    high = self.rec_high()
+                                    low = self.rec_low()
+                                    valid_rec = self.rec_high_low(high, low)
+                                    if valid_rec:
+                                        self.move_td()
+                                        continue
+
                         else:
                             self.move_td()
                             continue
@@ -156,6 +161,7 @@ class ImageProcessor:
 
 
 
+
     def match_enemy(self,value=0.9):
         global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -173,11 +179,11 @@ class ImageProcessor:
         # if len(loc[0]) != 0:
             # enemy_pt=loc[1][0],loc[0][0]
             # enemy_pt = loc[1][-1], loc[0][0]
-            print enemy_topleft
+            logger.debug("enemy found: %s", enemy_topleft)
             enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
             return enemy_topleft
         else:
-            enemy_topleft=None
+            enemy_topleft = None
             return None
 
 
@@ -363,6 +369,10 @@ class ImageProcessor:
 
         logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
 
+        if td_high is None or td_low is None:
+            return False
+        else:
+            return True
 
     def match_lock(self,value=0.99):
         global lock_topleft
