@@ -10,8 +10,8 @@ class BmsInterface:
         # except Exception, e:
         #     return 0
         self.command_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.command_addr = ("192.168.24.92", 4001)
-        # self.command_addr = ("192.168.20.122", 4001)
+        # self.command_addr = ("192.168.24.92", 4001)
+        self.command_addr = ("192.168.20.122", 4001)
 
     # def move_td(self, msg):
     #     self.command_socket.sendto("K:101", self.command_addr)
