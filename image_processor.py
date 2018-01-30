@@ -53,10 +53,9 @@ class ImageProcessor:
                 time.sleep(0.1)
                 valid_Lmfd = self.getImage_Lmfd("mfdleft")
                 if valid_Lmfd:
-                    enemy_topleft=self.match_enemy()
+                    pt_td = self.match_td()
+                    enemy_topleft = self.match_enemy()
                     # pt_td,wide_td,height_td = self.match_td()
-                    pt_td=self.match_td()
-
                     if enemy_topleft is None:
                         if pt_td is not None:
                             line = self.detect_td_line(pt_td)
@@ -79,9 +78,8 @@ class ImageProcessor:
             time.sleep(0.1)
             valid_Lmfd = self.getImage_Lmfd("mfdleft")
             if valid_Lmfd:
-                enemy_topleft = self.match_enemy()
                 pt_td = self.match_td()
-
+                enemy_topleft = self.match_enemy()
                 if enemy_topleft is None:
                     if pt_td is not None:
                         line = self.detect_td_line(pt_td)
@@ -138,8 +136,6 @@ class ImageProcessor:
         return valid_Lmfd
 
 
-
-
     def match_enemy(self,value=0.99):
         global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -157,11 +153,11 @@ class ImageProcessor:
         # if len(loc[0]) != 0:
             # enemy_pt=loc[1][0],loc[0][0]
             # enemy_pt = loc[1][-1], loc[0][0]
-            print enemy_topleft
+            logger.debug("enemy found: %s", enemy_topleft)
             enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
             return enemy_topleft
         else:
-            enemy_topleft=None
+            enemy_topleft = None
             return None
 
 
