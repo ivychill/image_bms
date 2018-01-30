@@ -56,7 +56,6 @@ class ImageProcessor:
                     enemy_topleft=self.match_enemy()
                     # pt_td,wide_td,height_td = self.match_td()
                     pt_td=self.match_td()
-
                     if enemy_topleft is None:
                         if pt_td is not None:
                             line = self.detect_td_line(pt_td)
@@ -68,6 +67,10 @@ class ImageProcessor:
                                 valid_rec=self.rec_high_low(high,low)
                                 if valid_rec:
                                     self.move_td()
+                                    continue
+                        else:
+                            self.move_td()
+                            continue
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -75,28 +78,34 @@ class ImageProcessor:
                     break
 
     def rec_main(self):
+        self.removeImage_Lmfd()
         while True:
             time.sleep(0.1)
             valid_Lmfd = self.getImage_Lmfd("mfdleft")
             if valid_Lmfd:
                 enemy_topleft = self.match_enemy()
                 pt_td = self.match_td()
-
-                if enemy_topleft is None:
-                    if pt_td is not None:
-                        line = self.detect_td_line(pt_td)
-                        if line == 0:
-                            self.move_td()
-                            continue
-                        else:
-                            high, low = self.process_td(pt_td)
-                            valid_rec = self.rec_high_low(high, low)
-                            if valid_rec:
+                lock_topleft = self.match_lock()
+                if lock_topleft is None:
+                    if enemy_topleft is None:
+                        if pt_td is not None:
+                            line = self.detect_td_line(pt_td)
+                            if line == 0:
                                 self.move_td()
                                 continue
-
-                lock_topleft = self.match_lock()
-                if lock_topleft is not None:
+                            else:
+                                self.crop_high(pt_td)
+                                self.crop_low(pt_td)
+                                high = self.rec_high()
+                                low = self.rec_low()
+                                valid_rec = self.rec_high_low(high, low)
+                                if valid_rec:
+                                    self.move_td()
+                                    continue
+                        else:
+                            self.move_td()
+                            continue
+                else:
                     self.match_Index()
                     self.match_Ropt()
                     self.match_Rpi()
@@ -116,6 +125,13 @@ class ImageProcessor:
     # def command(self):
     #     self.bms.command_socket.sendto("K:329", self.bms.command_addr)
     #     self.bms.command_socket.sendto("K:264", self.bms.command_addr)
+
+    def removeImage_Lmfd(self):
+        filename = './imgout_Lmfd.bmp'
+        if os.path.exists(filename):
+            os.remove(filename)
+        else:
+            print 'no image'
 
 
     def getImage_Lmfd(self, msg):
@@ -140,7 +156,7 @@ class ImageProcessor:
 
 
 
-    def match_enemy(self,value=0.99):
+    def match_enemy(self,value=0.9):
         global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
@@ -249,32 +265,77 @@ class ImageProcessor:
         #     logger.debug('command_up: %s,command_left: %s' % ('K:101','K:103'))
 
 
-    def process_td(self, pt_td):
-        image = Image.open('./imgout_Lmfd.jpg')
-        # image = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        # box1 = (pt_td[0] + wide_td, pt_td[1] -4, pt_td[0] + wide_td + 40, pt_td[1] + 19)
-        # box2 = (pt_td[0] + wide_td, pt_td[1] + height_td - 1 ,pt_td[0] + wide_td + 40, pt_td[1] + height_td + 24)
-        box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -8, pt_td[0] + self.wide_td + 40, pt_td[1] + 15)
-        box2 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 40, pt_td[1] + self.height_td + 24)
-        region1 = image.crop(box1)
-        region2 = image.crop(box2)
-        region1.save("high.jpg")
-        region2.save("low.jpg")
-        # region1.show()
-        # region2.show()
+    # def process_td(self, pt_td):
+    #     image = Image.open('./imgout_Lmfd.jpg')
+    #     # image = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+    #     # box1 = (pt_td[0] + wide_td, pt_td[1] -4, pt_td[0] + wide_td + 40, pt_td[1] + 19)
+    #     # box2 = (pt_td[0] + wide_td, pt_td[1] + height_td - 1 ,pt_td[0] + wide_td + 40, pt_td[1] + height_td + 24)
+    #     box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -10, pt_td[0] + self.wide_td + 40, pt_td[1] + 15)
+    #     box2 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 40, pt_td[1] + self.height_td + 22)
+    #     region1 = image.crop(box1)
+    #     region2 = image.crop(box2)
+    #     region1.save("high.jpg")
+    #     region2.save("low.jpg")
+    #     # region1.show()
+    #     # region2.show()
+    #
+    #     # matcher_good_threshold      0.125
+    #     # matcher_great_threshold     0
+    #     # matcher_perfect_threshold   0.02
+    #     # matcher_bad_match_pad       0.15
+    #     # high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+    #     # low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+    #     high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
+    #     low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
+    #     logger.debug("high: %s, low: %s" % (high, low))
+    #     region1.save("high.jpg")
+    #     region2.save("low.jpg")
+    #     return high,low
+    def crop_high(self,pt_td):
+      image = Image.open('./imgout_Lmfd.jpg')
+      high_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -10, pt_td[0] + self.wide_td + 12, pt_td[1] + 15)
+      region_high1 = image.crop(high_box1)
+      region_high1.save('region_high1.jpg')
+      high_box2 = (pt_td[0] + self.wide_td+12, pt_td[1] -10, pt_td[0] + self.wide_td + 26, pt_td[1] + 15)
+      region_high2 = image.crop(high_box2)
+      region_high2.save('region_high2.jpg')
+      high_box3 = (pt_td[0] + self.wide_td+26, pt_td[1] -10, pt_td[0] + self.wide_td + 40, pt_td[1] + 15)
+      region_high3 = image.crop(high_box3)
+      region_high3.save('region_high3.jpg')
 
-        # matcher_good_threshold      0.125
-        # matcher_great_threshold     0
-        # matcher_perfect_threshold   0.02
-        # matcher_bad_match_pad       0.15
-        # high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        # low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        high = pytesseract.image_to_string(region1, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
-        low = pytesseract.image_to_string(region2, config='--psm 7 -c tessedit_char_whitelist=-0123456789')
-        logger.debug("high: %s, low: %s" % (high, low))
-        region1.save("high.jpg")
-        region2.save("low.jpg")
-        return high,low
+    def crop_low(self,pt_td):
+      image = Image.open('./imgout_Lmfd.jpg')
+      low_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 12, pt_td[1] + self.height_td + 22)
+      region_low1 = image.crop(low_box1)
+      region_low1.save('region_low1.jpg')
+      low_box2 = (pt_td[0] + self.wide_td+12, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 26, pt_td[1] + self.height_td + 22)
+      region_low2 = image.crop(low_box2)
+      region_low2.save('region_low2.jpg')
+      low_box3 = (pt_td[0] + self.wide_td+26, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 40, pt_td[1] + self.height_td + 22)
+      region_low3 = image.crop(low_box3)
+      region_low3.save('region_low3.jpg')
+
+    def rec_high(self):
+        region1 = Image.open('region_high1.jpg')
+        region2 = Image.open('region_high2.jpg')
+        region3 = Image.open('region_high3.jpg')
+        rec_high1 = pytesseract.image_to_string(region1,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_high2 = pytesseract.image_to_string(region2,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_high3 = pytesseract.image_to_string(region3,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        high = rec_high1+rec_high2+rec_high3
+        logger.debug("high: %s" % (high))
+        return high
+
+    def rec_low(self):
+        region1 = Image.open('region_low1.jpg')
+        region2 = Image.open('region_low2.jpg')
+        region3 = Image.open('region_low3.jpg')
+        rec_low1 = pytesseract.image_to_string(region1,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_low2 = pytesseract.image_to_string(region2,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_low3 = pytesseract.image_to_string(region3,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        low = rec_low1+rec_low2+rec_low3
+        logger.debug("low %s" % (low))
+        return low
 
     def rec_high_low(self,high,low):
         global td_high, td_low
@@ -282,6 +343,7 @@ class ImageProcessor:
         matched_low = re.match('^[-]?\d{2}$', low)
         if matched_high is not None:
             td_high = int(high)
+            logger.debug("td_high: %s" % (td_high))
         else:
 
             logger.warn('match high fail')
@@ -289,6 +351,7 @@ class ImageProcessor:
 
         if matched_low is not None:
             td_low = int(low)
+            logger.debug("td_low: %s" % (td_low))
         else:
             logger.warn('match low fail')
             td_low = None
@@ -435,7 +498,7 @@ class ImageProcessor:
         region_miss_clock = image.crop(box_miss_clock)
         region_fcr = image.crop(box_fcr)
         miss_clock_digit = pytesseract.image_to_string(region_miss_clock, config='--psm 7')
-        fcr_nose_up = pytesseract.image_to_string(region_fcr, config='--psm 7')
+        fcr_nose_up = pytesseract.image_to_string(region_fcr, config='--psm 7 -c tessedit_char_whitelist=0123456789')
         str_miss_clock_digit=str(miss_clock_digit)
         str_fcr_nose_up=str(fcr_nose_up)
 
