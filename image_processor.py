@@ -326,9 +326,9 @@ class ImageProcessor:
         region1 = Image.open('region_high1.jpg')
         region2 = Image.open('region_high2.jpg')
         region3 = Image.open('region_high3.jpg')
-        rec_high1 = pytesseract.image_to_string(region1,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        rec_high2 = pytesseract.image_to_string(region2,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        rec_high3 = pytesseract.image_to_string(region3,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_high1 = pytesseract.image_to_string(region1,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_high2 = pytesseract.image_to_string(region2,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_high3 = pytesseract.image_to_string(region3,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
         high = rec_high1+rec_high2+rec_high3
         logger.debug("high: %s" % (high))
         return high
@@ -337,9 +337,9 @@ class ImageProcessor:
         region1 = Image.open('region_low1.jpg')
         region2 = Image.open('region_low2.jpg')
         region3 = Image.open('region_low3.jpg')
-        rec_low1 = pytesseract.image_to_string(region1,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        rec_low2 = pytesseract.image_to_string(region2,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        rec_low3 = pytesseract.image_to_string(region3,config='--psm 7 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_low1 = pytesseract.image_to_string(region1,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_low2 = pytesseract.image_to_string(region2,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        rec_low3 = pytesseract.image_to_string(region3,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
         low = rec_low1+rec_low2+rec_low3
         logger.debug("low %s" % (low))
         return low
@@ -352,7 +352,6 @@ class ImageProcessor:
             td_high = int(high)
             logger.debug("td_high: %s" % (td_high))
         else:
-
             logger.warn('match high fail')
             td_high = None
 
