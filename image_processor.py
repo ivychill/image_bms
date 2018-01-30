@@ -153,11 +153,12 @@ class ImageProcessor:
         # if len(loc[0]) != 0:
             # enemy_pt=loc[1][0],loc[0][0]
             # enemy_pt = loc[1][-1], loc[0][0]
-            logger.debug("enemy found: %s", enemy_topleft)
             enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
+            logger.debug("enemy appear: %s", enemy_topleft)
             return enemy_topleft
         else:
             enemy_topleft = None
+            logger.debug("enemy disappear")
             return None
 
 
@@ -184,12 +185,12 @@ class ImageProcessor:
             # cv2.rectangle(img_rgb, pt_td, (pt_td[0] + wide_td, pt_td[1] + height_td), (7, 249, 151), 2)
             # cv2.imshow('pt_td',img_rgb)
             # cv2.waitKey(0)
-            print pt_td
+            logger.debug("td matched: %s", pt_td)
             td_topleft = (int(pt_td[0]),int(pt_td[1]))
-
             return pt_td
         else:
             td_topleft = None
+            logger.debug("td unmatched")
             return None
 
     def detect_td_line(self, pt_td):
