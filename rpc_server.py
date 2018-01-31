@@ -24,6 +24,7 @@ def register_rpc(image_processor):
     server.register_function(get_miss_clock, "get_miss_clock")
     server.register_function(start, "start")
     server.register_function(stop, "stop")
+    server.register_function(reboot, "reboot")
     server.serve_forever()  # 启动服务器,并使其对这个连接可用
 
 def get_td():
@@ -61,9 +62,10 @@ def get_miss_clock():
     return image_processor.miss_clock_digit,image_processor.fcr_nose_up
 
 def start():
-    logger.info("started...")
     image_proc.start()
 
 def stop():
     image_proc.stop()
 
+def reboot():
+    image_proc.reboot()

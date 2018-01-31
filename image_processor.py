@@ -42,12 +42,14 @@ class ImageProcessor:
         self.bms = BmsInterface()
         self.event_start = threading.Event()
         self.event_stop = threading.Event()
+        self.event_reboot = threading.Event()
 
     def ai_main(self):
         while True:
             logger.warn("...waiting for start event...")
             self.event_start.wait()
-            time.sleep(12)
+            self.event_start.clear()
+            time.sleep(20)
             logger.warn("...start an episode...")
             while True:
                 time.sleep(0.1)
@@ -77,6 +79,12 @@ class ImageProcessor:
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
                     self.event_stop.clear()
+                    time.sleep(12)
+                    break
+                if self.event_reboot.is_set():
+                    logger.warn("...stop an episode...")
+                    self.event_reboot.clear()
+                    time.sleep(20)
                     break
 
     def rec_main(self):
@@ -521,13 +529,6 @@ class ImageProcessor:
             print 'fcr_nose_up: %s' %(fcr_nose_up)
 
 
-
-
-
-
-
-
-
     def start(self):
         logger.info("set event start...")
         self.event_start.set()
@@ -535,3 +536,7 @@ class ImageProcessor:
     def stop(self):
         self.event_stop.set()
         logger.info("set event stop...")
+
+    def reboot(self):
+        self.event_reboot.set()
+        logger.info("set event reboot...")
