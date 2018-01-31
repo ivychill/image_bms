@@ -25,6 +25,8 @@ from random import *
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+x=0
+y=0
 td_topleft = None
 td_high = None
 td_low = None
@@ -68,10 +70,13 @@ class ImageProcessor:
                                 self.crop_low(pt_td)
                                 high = self.rec_high()
                                 low = self.rec_low()
-                                valid_rec = self.rec_high_low(high, low)
-                                if valid_rec:
+                                if high and low is None:
                                     self.move_td()
-                                    continue
+                                else:
+                                    valid_rec = self.rec_high_low(high, low)
+                                    if valid_rec:
+                                        self.move_td()
+                                        continue
                         else:
                             self.move_td()
                             continue
@@ -104,10 +109,16 @@ class ImageProcessor:
                                     self.move_td()
                                     continue
                             else:
-                                    self.crop_high(pt_td)
-                                    self.crop_low(pt_td)
-                                    high = self.rec_high()
-                                    low = self.rec_low()
+                                # ret = rec_scale()
+                                # if ret is none:
+                                # self.move_td()
+                                self.crop_high(pt_td)
+                                self.crop_low(pt_td)
+                                high = self.rec_high()
+                                low = self.rec_low()
+                                if high and low is None:
+                                    self.move_td()
+                                else:
                                     valid_rec = self.rec_high_low(high, low)
                                     if valid_rec:
                                         self.move_td()
@@ -121,8 +132,7 @@ class ImageProcessor:
                     self.match_Ropt()
                     self.match_Rpi()
                     self.match_Rtr()
-
-                self.Miss_clock_and_Fcr_rec()
+                    self.Miss_clock_and_Fcr_rec()
 
 
             # logger.warn("...waiting for start event...")
@@ -145,7 +155,9 @@ class ImageProcessor:
             print 'no image'
 
 
-    def getImage_Lmfd(self, msg):
+    def getImage_Lmfd(self, msg): #get BMS_lmfd_image
+        # global x
+        # x=0
         self.bms.image_socket.send(msg)
         stringData_Lmfd = self.bms.image_socket.recv(1024*1024)
         aa = len(stringData_Lmfd)
@@ -164,7 +176,26 @@ class ImageProcessor:
             # time.sleep(0.5)
         return valid_Lmfd
 
+    def match_lock(self,value=0.55):
+        global lock_topleft
+        img_rgb = cv2.imread('./imgout_Lmfd.jpg')
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        Target = cv2.imread('./lock_label.jpg')
+        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
+        w, h = template.shape[::-1]
+        self.value = value
+        threshold = value
+        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
+        if maxVal >= threshold:
+            pt_lock = maxLoc
+            lock_topleft = (int(pt_lock[0]), int(pt_lock[1]))
+            return lock_topleft
+        else:
+            lock_topleft = None
+            return None
 
+    # match_enemy,and get the enemytopleft
     def match_enemy(self,value=0.9):
         global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -175,6 +206,7 @@ class ImageProcessor:
         self.value = value
         threshold = value
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        # TM_CCOEFF_NORMED,the maxLoc is best Loc,then set maxval > threshold, then get the maxLoc
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
         if maxVal >= threshold:
             enemy_pt = maxLoc
@@ -190,7 +222,7 @@ class ImageProcessor:
             logger.debug("enemy disappear")
             return None
 
-
+    # match_td and get the tdtopleft
     def match_td(self, value=0.7):
         global td_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -231,16 +263,18 @@ class ImageProcessor:
         maxLineGap = 15
         lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 40, minLineLength, maxLineGap)
         # print self.wide_td,self.height_td
+        # x1,y1,x2,y2 in lines,if each in the high_low,then move td
         for x1, y1, x2, y2 in lines[0]:
-            if ((pt_td[0] + self.wide_td < x1 < pt_td[0] + self.wide_td + 40) and (
-                        pt_td[1] - 4 < y1 < pt_td[1] + self.height_td + 24) or (
-                               pt_td[0] + self.wide_td < x2 < pt_td[0] + self.wide_td + 40) and (pt_td[1] - 4 < y2 < pt_td[1] + self.height_td  + 24)):
+            if ((pt_td[0] + self.wide_td -2< x1 < pt_td[0] + self.wide_td + 40) and (
+                        pt_td[1] - 1 < y1 < pt_td[1] + self.height_td + 24) or (
+                               pt_td[0] + self.wide_td -2< x2 < pt_td[0] + self.wide_td + 40) and (pt_td[1] - 3 < y2 < pt_td[1] + self.height_td  + 22)):
 
                 return 0
             else:
                 continue
 
 
+    # base the random number to move td randomly
     def move_td(self):
         n = random()
         # logger.debug('rand: %s' % (n))
@@ -301,54 +335,87 @@ class ImageProcessor:
     #     region1.save("high.jpg")
     #     region2.save("low.jpg")
     #     return high,low
-    def crop_high(self,pt_td):
-      image = Image.open('./imgout_Lmfd.jpg')
-      high_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -10, pt_td[0] + self.wide_td + 12, pt_td[1] + 15)
-      region_high1 = image.crop(high_box1)
-      region_high1.save('region_high1.jpg')
-      high_box2 = (pt_td[0] + self.wide_td+12, pt_td[1] -10, pt_td[0] + self.wide_td + 26, pt_td[1] + 15)
-      region_high2 = image.crop(high_box2)
-      region_high2.save('region_high2.jpg')
-      high_box3 = (pt_td[0] + self.wide_td+26, pt_td[1] -10, pt_td[0] + self.wide_td + 40, pt_td[1] + 15)
-      region_high3 = image.crop(high_box3)
-      region_high3.save('region_high3.jpg')
 
+    # crop each character and save them for each crop
+    def crop_high(self,pt_td):
+        global x
+        image = Image.open('./imgout_Lmfd.jpg')
+        high_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -10, pt_td[0] + self.wide_td + 12, pt_td[1] + 14)
+        region_high1 = image.crop(high_box1)
+        region_high1.save('region_high1.jpg')
+        # imgname1 = str(x) + 'high1_2' + " .jpg"
+        # region_high1.save(imgname1)
+        high_box2 = (pt_td[0] + self.wide_td+10, pt_td[1] -10, pt_td[0] + self.wide_td + 24, pt_td[1] + 14)
+        region_high2 = image.crop(high_box2)
+        region_high2.save('region_high2.jpg')
+        # imgname2 = str(x) + 'high2_2' + " .jpg"
+        # region_high2.save(imgname2)
+        high_box3 = (pt_td[0] + self.wide_td+23, pt_td[1] -10, pt_td[0] + self.wide_td + 37, pt_td[1] + 14)
+        region_high3 = image.crop(high_box3)
+        region_high3.save('region_high3.jpg')
+        # imgname3 = str(x) + 'high3_2' + " .jpg"
+        # region_high3.save(imgname3)
+        x = x+1
+
+    # crop each character and save them for each crop
     def crop_low(self,pt_td):
-      image = Image.open('./imgout_Lmfd.jpg')
-      low_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 12, pt_td[1] + self.height_td + 22)
-      region_low1 = image.crop(low_box1)
-      region_low1.save('region_low1.jpg')
-      low_box2 = (pt_td[0] + self.wide_td+12, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 26, pt_td[1] + self.height_td + 22)
-      region_low2 = image.crop(low_box2)
-      region_low2.save('region_low2.jpg')
-      low_box3 = (pt_td[0] + self.wide_td+26, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 40, pt_td[1] + self.height_td + 22)
-      region_low3 = image.crop(low_box3)
-      region_low3.save('region_low3.jpg')
+        global y
+        image = Image.open('./imgout_Lmfd.jpg')
+        low_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 12, pt_td[1] + self.height_td + 21)
+        region_low1 = image.crop(low_box1)
+        region_low1.save('region_low1.jpg')
+        # imgname1 = str(x) + 'low1_2' + " .jpg"
+        # region_low1.save(imgname1)
+        low_box2 = (pt_td[0] + self.wide_td+10, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 24, pt_td[1] + self.height_td + 21)
+        region_low2 = image.crop(low_box2)
+        region_low2.save('region_low2.jpg')
+        # imgname2 = str(x) + 'low2_2' + " .jpg"
+        # region_low2.save(imgname2)
+        low_box3 = (pt_td[0] + self.wide_td+22, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 36, pt_td[1] + self.height_td + 21)
+        region_low3 = image.crop(low_box3)
+        region_low3.save('region_low3.jpg')
+        # imgname3 = str(x) + 'low3_2' + " .jpg"
+        # region_low3.save(imgname3)
+        y = y+1
 
     def rec_high(self):
         region1 = Image.open('region_high1.jpg')
         region2 = Image.open('region_high2.jpg')
         region3 = Image.open('region_high3.jpg')
         rec_high1 = pytesseract.image_to_string(region1,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        logger.debug("rec_high1: %s" % (rec_high1))
         rec_high2 = pytesseract.image_to_string(region2,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        logger.debug("rec_high2: %s" % (rec_high2))
         rec_high3 = pytesseract.image_to_string(region3,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        high = rec_high1+rec_high2+rec_high3
-        logger.debug("high: %s" % (high))
-        return high
-
+        logger.debug("rec_high3: %s" % (rec_high3))
+        if len(rec_high1) == 0 or len(rec_high2) == 0:
+            logger.debug('rec_high wrong')
+            return None
+        else:
+            high = rec_high1+rec_high2+rec_high3
+            logger.debug("high: %s" % (high))
+            return high
     def rec_low(self):
         region1 = Image.open('region_low1.jpg')
         region2 = Image.open('region_low2.jpg')
         region3 = Image.open('region_low3.jpg')
         rec_low1 = pytesseract.image_to_string(region1,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        logger.debug("rec_low1: %s" % (rec_low1))
         rec_low2 = pytesseract.image_to_string(region2,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
+        logger.debug("rec_low2: %s" % (rec_low2))
         rec_low3 = pytesseract.image_to_string(region3,config='--psm 10 -c tessedit_char_whitelist=-0123456789 -c matcher_perfect_threshold=0.9')
-        low = rec_low1+rec_low2+rec_low3
-        logger.debug("low: %s" % (low))
-        return low
+        logger.debug("rec_low3: %s" % (rec_low3))
+        if len(rec_low1) == 0 or len(rec_low2) == 0:
+            logger.debug('rec_low wrong')
+            return None
+        else:
+            low = rec_low1+rec_low2+rec_low3
+            logger.debug("low %s" % (low))
+            return low
 
     def rec_high_low(self,high,low):
         global td_high, td_low
+        # regular expression to remove wrong digit
         matched_high = re.match('^[-]?\d{2}$', high)
         matched_low = re.match('^[-]?\d{2}$', low)
         if matched_high is not None:
@@ -377,30 +444,7 @@ class ImageProcessor:
         else:
             return True
 
-    def match_lock(self,value=0.99):
-        global lock_topleft
-        img_rgb = cv2.imread('./imgout_Lmfd.jpg')
-        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        Target = cv2.imread('./lock_label.jpg')
-        template = cv2.cvtColor(Target, cv2.COLOR_BGR2GRAY)
-        w, h = template.shape[::-1]
-        self.value = value
-        threshold = value
-        res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
-        if maxVal >= threshold:
-            pt_lock = maxLoc
-        # loc = np.where(res >= threshold)
-        # if len(loc[0]) != 0:
-        #     pt_lock = loc[1][-1], loc[0][0]
-            lock_topleft = (int(pt_lock[0]), int(pt_lock[1]))
-            # print lock_topleft
-            return lock_topleft
-        else:
-            lock_topleft = None
-            return None
-
-
+    # match_Index and get the Index_topleft
     def match_Index(self,value=0.75):
         global Index_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -414,10 +458,6 @@ class ImageProcessor:
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
         if maxVal >= threshold:
             pt_Index = maxLoc
-        # loc = np.where(res >= threshold)
-        # if len(loc[0]) != 0:
-            # pt_Index=loc[1][0],loc[0][0]
-            # pt_Index = loc[1][-1], loc[0][0] + 10
             # loc is topleft corner. mid-point of height should be used.
             # Thus, compensation of 10pix is given to pt_Index.
             Index_topleft= int(pt_Index[1])+10
@@ -425,7 +465,7 @@ class ImageProcessor:
         else:
             Index_topleft = None
 
-
+    # match_Ropt and get the Ropt_topleft
     def match_Ropt(self,value=0.6):
         global Ropt_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -448,7 +488,7 @@ class ImageProcessor:
         else:
             Ropt_topleft = None
 
-
+    # match_Rpi and get the Rpi_topleft
     def match_Rpi(self,value=0.7):
         global Rpi_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -464,17 +504,12 @@ class ImageProcessor:
         if maxVal >= threshold:
            pt_Rpi = maxLoc
            if pt_Rpi[1] >220:
-        # if len(loc[0]) != 0:
-        #     for pt_Rpi in loc[0][:-1]:
-        #         if pt_Rpi > 220:
-            # pt_Rpi=loc[1][0],loc[0][0]
-                    Rpi_topleft= int(pt_Rpi[1])
+                Rpi_topleft= int(pt_Rpi[1])
                     # print 'Rpi_topleft is %d' % (Rpi_topleft)
-
         else:
-            Rpi_topleft= None
+           Rpi_topleft= None
 
-
+    # match_Rtr and get the Rtr_topleft
     def match_Rtr(self,value=0.85):
         global Rtr_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
@@ -488,15 +523,11 @@ class ImageProcessor:
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res)
         if maxVal >= threshold:
             pt_Rtr = maxLoc
-        # loc = np.where(res >= threshold)
-        # if len(loc[0]) != 0:
-            # pt_Rtr=loc[1][0],loc[0][0]
-            # pt_Rtr = loc[1][-1], loc[0][0]
             Rtr_topleft=int(pt_Rtr[1])
             # print 'Rtr_topleft is %d' % (Rtr_topleft)
         else:
             Rtr_topleft = None
-
+    # rec miss_clock_digit and fcr_nose_up
     def Miss_clock_and_Fcr_rec(self):
         global miss_clock_digit,fcr_nose_up
         pt_miss_clock=(386,362)

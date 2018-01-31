@@ -17,12 +17,12 @@ def match_t1(image_path, Target, value):
     # for p1 in zip(*loc[::-1]):
     cv2.rectangle(img_rgb, p1, (p1[0] + w, p1[1] + h), (7, 249, 151), 2)
 
-    cv2.imshow('Index', img_rgb)
+    cv2.imshow('enemy', img_rgb)
     cv2.waitKey(0)
     return p1
     # return
 
-image = ("imgout.jpg")
-Target = ('Index_label.jpg')
-value=0.75
+image = ("imgout_Lmfd.jpg")
+Target = ('td.jpg')
+value=0.7
 match_t1(image,Target,value)

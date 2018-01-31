@@ -12,11 +12,12 @@ image_proc = None
 def register_rpc(image_processor):
     global image_proc
     image_proc = image_processor
-    # server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
-    server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
+    server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
+    # server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
     server.register_function(get_td, "get_td")  # 注册is_even函数
     server.register_function(get_td_high_low, "get_td_high_low")
     server.register_function(get_enemy_coord, "get_enemy_coord")
+    server.register_function(get_lock_enemy, "get_lock_enemy")
     server.register_function(get_Index, "get_Index")
     server.register_function(get_Ropt, "get_Ropt")
     server.register_function(get_Rpi, "get_Rpi")
@@ -40,6 +41,10 @@ def get_enemy_coord():
     print image_processor.enemy_topleft
     # logger.debug("enemy_topleft: %s" % (image_processor.enemy_topleft))
     return image_processor.enemy_topleft
+
+def get_lock_enemy():
+    print image_processor.lock_topleft
+    return image_processor.lock_topleft
 
 def get_Index():
     print  image_processor.Index_topleft
