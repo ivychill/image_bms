@@ -206,11 +206,12 @@ class ImageProcessor:
         # if len(loc[0]) != 0:
             # enemy_pt=loc[1][0],loc[0][0]
             # enemy_pt = loc[1][-1], loc[0][0]
-            logger.debug("enemy found: %s", enemy_topleft)
             enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
+            logger.debug("enemy appear: %s", enemy_topleft)
             return enemy_topleft
         else:
             enemy_topleft = None
+            logger.debug("enemy disappear")
             return None
 
     # match_td and get the tdtopleft
@@ -237,12 +238,12 @@ class ImageProcessor:
             # cv2.rectangle(img_rgb, pt_td, (pt_td[0] + wide_td, pt_td[1] + height_td), (7, 249, 151), 2)
             # cv2.imshow('pt_td',img_rgb)
             # cv2.waitKey(0)
-            print pt_td
+            logger.debug("td matched: %s", pt_td)
             td_topleft = (int(pt_td[0]),int(pt_td[1]))
-
             return pt_td
         else:
             td_topleft = None
+            logger.debug("td unmatched")
             return None
 
     def detect_td_line(self, pt_td):
@@ -268,19 +269,19 @@ class ImageProcessor:
     # base the random number to move td randomly
     def move_td(self):
         n = random()
-        logger.debug('randge: %s' % (n))
+        # logger.debug('rand: %s' % (n))
         if 0.0 <= n <=0.25:
             self.bms.command_socket.sendto("K:101", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:101'))
+            # logger.debug('command_up: %s' % ('K:101'))
         elif 0.25 < n <=0.5:
             self.bms.command_socket.sendto("K:102", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:102'))
+            # logger.debug('command_up: %s' % ('K:102'))
         elif 0.5 <n <=0.75:
             self.bms.command_socket.sendto("K:103", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:103'))
+            # logger.debug('command_up: %s' % ('K:103'))
         else:
             self.bms.command_socket.sendto("K:104", self.bms.command_addr)
-            logger.debug('command_up: %s' % ('K:104'))
+            # logger.debug('command_up: %s' % ('K:104'))
         # if 0 < pt_td[0] < 255 and 0 < pt_td[1] < 255:
         #     self.bms.command_socket.sendto("K:102", self.bms.command_addr)
         #     self.bms.command_socket.sendto("K:104", self.bms.command_addr)
@@ -386,8 +387,6 @@ class ImageProcessor:
             high = rec_high1+rec_high2+rec_high3
             logger.debug("high: %s" % (high))
             return high
-
-
     def rec_low(self):
         region1 = Image.open('region_low1.jpg')
         region2 = Image.open('region_low2.jpg')
@@ -415,7 +414,6 @@ class ImageProcessor:
             td_high = int(high)
             logger.debug("td_high: %s" % (td_high))
         else:
-
             logger.warn('match high fail')
             td_high = None
 
