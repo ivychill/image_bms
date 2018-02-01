@@ -59,16 +59,14 @@ class ImageProcessor:
                 time.sleep(0.1)
                 valid_Lmfd = self.getImage_Lmfd("mfdleft")
                 if valid_Lmfd:
-                    self.match_td()
                     self.match_enemy()
-                    if self.enemy_topleft is None:
-                        if self.td_topleft is not None:
-                            if self.detect_td_line():
-                                self.move_td()
-                            elif not self.rec_vetical_scale():
-                                self.move_td()
-                        else:
-                            self.move_td()
+                    self.match_td()
+                    if self.td_topleft is None:
+                        self.move_td()
+                    elif self.detect_td_line():
+                        self.move_td()
+                    elif not self.rec_vertical_range():
+                        self.move_td()
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -86,15 +84,14 @@ class ImageProcessor:
         self.crop_low()
         high = self.rec_high()
         low = self.rec_low()
+        logger.debug("high = %s, low = %s" % (high, low))
         if (high is None) or (low is None):
-            # self.move_td()
             return False
         else:
             self.td_high = self.re_match(high)
             self.td_low = self.re_match(low)
             logger.debug("td_high: %s, td_low: %s" % (self.td_high, self.td_low))
             if (self.td_high is None) or (self.td_low is None):
-                # self.move_td()
                 return False
             else:
                 return True
@@ -258,6 +255,7 @@ class ImageProcessor:
 
 
     def detect_td_line(self):
+        logger.debug("detect_td_line begin")
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         gaus = cv2.GaussianBlur(img_gray, (3, 3), 0)
@@ -272,23 +270,23 @@ class ImageProcessor:
                     and (self.td_topleft[1] - 1 < y1 < self.td_topleft[1] + self.height_td + 24))
                 or ((self.td_topleft[0] + self.wide_td -2< x2 < self.td_topleft[0] + self.wide_td + 40)
                     and (self.td_topleft[1] - 3 < y2 < self.td_topleft[1] + self.height_td  + 22))):
+                logger.debug("with line")
                 return True
-            else:
-                continue
 
+        logger.debug("without line")
         return False
 
     # base the random number to move td randomly
     def move_td(self):
         n = random()
         # logger.debug('rand: %s' % (n))
-        if 0.0 <= n <=0.25:
+        if 0.0 <= n < 0.25:
             self.bms.command_socket.sendto("K:101", self.bms.command_addr)
             # logger.debug('command_up: %s' % ('K:101'))
-        elif 0.25 < n <=0.5:
+        elif 0.25 <= n < 0.5:
             self.bms.command_socket.sendto("K:102", self.bms.command_addr)
             # logger.debug('command_up: %s' % ('K:102'))
-        elif 0.5 <n <=0.75:
+        elif 0.5 <= n < 0.75:
             self.bms.command_socket.sendto("K:103", self.bms.command_addr)
             # logger.debug('command_up: %s' % ('K:103'))
         else:
@@ -344,17 +342,17 @@ class ImageProcessor:
     def crop_high(self):
         global x
         image = Image.open('./imgout_Lmfd.jpg')
-        high_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 12, self.td_topleft[1] + 14)
+        high_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1]-10, self.td_topleft[0] + self.wide_td+12, self.td_topleft[1]+14)
         region_high1 = image.crop(high_box1)
         region_high1.save('region_high1.jpg')
         # imgname1 = str(x) + 'high1_2' + ".jpg"
         # region_high1.save(imgname1)
-        high_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 24, self.td_topleft[1] + 14)
+        high_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1]-10, self.td_topleft[0] + self.wide_td+24, self.td_topleft[1]+14)
         region_high2 = image.crop(high_box2)
         region_high2.save('region_high2.jpg')
         # imgname2 = str(x) + 'high2_2' + ".jpg"
         # region_high2.save(imgname2)
-        high_box3 = (self.td_topleft[0] + self.wide_td+23, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 37, self.td_topleft[1] + 14)
+        high_box3 = (self.td_topleft[0] + self.wide_td+23, self.td_topleft[1]-10, self.td_topleft[0] + self.wide_td+37, self.td_topleft[1]+14)
         region_high3 = image.crop(high_box3)
         region_high3.save('region_high3.jpg')
         # imgname3 = str(x) + 'high3_2' + ".jpg"
@@ -366,19 +364,19 @@ class ImageProcessor:
         global y
         image = Image.open('./imgout_Lmfd.jpg')
         low_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1] + self.height_td-3,
-                    self.td_topleft[0] + self.wide_td + 12, self.td_topleft[1] + self.height_td + 21)
+                    self.td_topleft[0] + self.wide_td+12, self.td_topleft[1] + self.height_td+21)
         region_low1 = image.crop(low_box1)
         region_low1.save('region_low1.jpg')
         # imgname1 = str(x) + 'low1_2' + ".jpg"
         # region_low1.save(imgname1)
         low_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1] + self.height_td-3,
-                    self.td_topleft[0] + self.wide_td + 24, self.td_topleft[1] + self.height_td + 21)
+                    self.td_topleft[0] + self.wide_td+24, self.td_topleft[1] + self.height_td+21)
         region_low2 = image.crop(low_box2)
         region_low2.save('region_low2.jpg')
         # imgname2 = str(x) + 'low2_2' + ".jpg"
         # region_low2.save(imgname2)
         low_box3 = (self.td_topleft[0] + self.wide_td+22, self.td_topleft[1] + self.height_td-3,
-                    self.td_topleft[0] + self.wide_td + 36, self.td_topleft[1] + self.height_td + 21)
+                    self.td_topleft[0] + self.wide_td+36, self.td_topleft[1] + self.height_td+21)
         region_low3 = image.crop(low_box3)
         region_low3.save('region_low3.jpg')
         # imgname3 = str(x) + 'low3_2' + ".jpg"
