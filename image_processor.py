@@ -347,17 +347,17 @@ class ImageProcessor:
         high_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 12, self.td_topleft[1] + 14)
         region_high1 = image.crop(high_box1)
         region_high1.save('region_high1.jpg')
-        # imgname1 = str(x) + 'high1_2' + " .jpg"
+        # imgname1 = str(x) + 'high1_2' + ".jpg"
         # region_high1.save(imgname1)
         high_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 24, self.td_topleft[1] + 14)
         region_high2 = image.crop(high_box2)
         region_high2.save('region_high2.jpg')
-        # imgname2 = str(x) + 'high2_2' + " .jpg"
+        # imgname2 = str(x) + 'high2_2' + ".jpg"
         # region_high2.save(imgname2)
         high_box3 = (self.td_topleft[0] + self.wide_td+23, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 37, self.td_topleft[1] + 14)
         region_high3 = image.crop(high_box3)
         region_high3.save('region_high3.jpg')
-        # imgname3 = str(x) + 'high3_2' + " .jpg"
+        # imgname3 = str(x) + 'high3_2' + ".jpg"
         # region_high3.save(imgname3)
         x = x+1
 
