@@ -424,7 +424,7 @@ class ImageProcessor:
         matched = re.match('^[-]?\d{2}$', str_digit)
 
         if matched is not None:
-            return int(matched)
+            return int(str_digit)
         else:
             logger.warn('match fail')
             return None
