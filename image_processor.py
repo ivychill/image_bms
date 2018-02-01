@@ -27,10 +27,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 x=0
 y=0
-td_topleft = None
-td_high = None
-td_low = None
-enemy_topleft = None
+
 
 lock_topleft=None
 Index_topleft=None
@@ -39,12 +36,17 @@ Rpi_topleft=None
 Rtr_topleft=None
 miss_clock_digit = None
 fcr_nose_up = None
+
 class ImageProcessor:
     def __init__(self):
         self.bms = BmsInterface()
         self.event_start = threading.Event()
         self.event_stop = threading.Event()
         self.event_reboot = threading.Event()
+        self.td_topleft = None
+        self.td_high = None
+        self.td_low = None
+        self.enemy_topleft = None
 
     def ai_main(self):
         while True:
@@ -57,29 +59,16 @@ class ImageProcessor:
                 time.sleep(0.1)
                 valid_Lmfd = self.getImage_Lmfd("mfdleft")
                 if valid_Lmfd:
-                    pt_td = self.match_td()
-                    enemy_topleft = self.match_enemy()
-                    if enemy_topleft is None:
-                        if pt_td is not None:
-                            line = self.detect_td_line(pt_td)
-                            if line == 0:
+                    self.match_td()
+                    self.match_enemy()
+                    if self.enemy_topleft is None:
+                        if self.td_topleft is not None:
+                            if self.detect_td_line():
                                 self.move_td()
-                                continue
-                            else:
-                                self.crop_high(pt_td)
-                                self.crop_low(pt_td)
-                                high = self.rec_high()
-                                low = self.rec_low()
-                                if high and low is None:
-                                    self.move_td()
-                                else:
-                                    valid_rec = self.rec_high_low(high, low)
-                                    if valid_rec:
-                                        self.move_td()
-                                        continue
+                            elif not self.rec_vetical_scale():
+                                self.move_td()
                         else:
                             self.move_td()
-                            continue
 
                 if self.event_stop.is_set():
                     logger.warn("...stop an episode...")
@@ -91,6 +80,24 @@ class ImageProcessor:
                     self.event_reboot.clear()
                     time.sleep(20)
                     break
+
+    def rec_vertical_range(self):
+        self.crop_high()
+        self.crop_low()
+        high = self.rec_high()
+        low = self.rec_low()
+        if (high is None) or (low is None):
+            # self.move_td()
+            return False
+        else:
+            self.td_high = self.re_match(high)
+            self.td_low = self.re_match(low)
+            logger.debug("td_high: %s, td_low: %s" % (self.td_high, self.td_low))
+            if (self.td_high is None) or (self.td_low is None):
+                # self.move_td()
+                return False
+            else:
+                return True
 
     def rec_main(self):
         self.removeImage_Lmfd()
@@ -104,10 +111,8 @@ class ImageProcessor:
                 if lock_topleft is None:
                     if enemy_topleft is None:
                         if pt_td is not None:
-                            line = self.detect_td_line(pt_td)
-                            if line == 0:
+                            if self.detect_td_line():
                                     self.move_td()
-                                    continue
                             else:
                                 # ret = rec_scale()
                                 # if ret is none:
@@ -197,7 +202,6 @@ class ImageProcessor:
 
     # match_enemy,and get the enemytopleft
     def match_enemy(self,value=0.9):
-        global enemy_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         Target=cv2.imread('./enemy.jpg')
@@ -214,17 +218,16 @@ class ImageProcessor:
         # if len(loc[0]) != 0:
             # enemy_pt=loc[1][0],loc[0][0]
             # enemy_pt = loc[1][-1], loc[0][0]
-            enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
-            logger.debug("enemy appear: %s", enemy_topleft)
-            return enemy_topleft
+            self.enemy_topleft = (int(enemy_pt[0]),int(enemy_pt[1]))
+            logger.debug("enemy appear: %s", self.enemy_topleft)
+
         else:
-            enemy_topleft = None
+            self.enemy_topleft = None
             logger.debug("enemy disappear")
-            return None
+
 
     # match_td and get the tdtopleft
     def match_td(self, value=0.7):
-        global td_topleft
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         # Target = cv2.imread('./template/td.jpg')
@@ -241,20 +244,20 @@ class ImageProcessor:
             pt_td = maxLoc
         # loc = np.where(res >= threshold)
         # if len(loc[0]) != 0:
-        #     # pt_td=loc[1][0],loc[0][0]
+        #     pt_td=loc[1][0],loc[0][0]
         #     pt_td = loc[1][-1], loc[0][0]
             # cv2.rectangle(img_rgb, pt_td, (pt_td[0] + wide_td, pt_td[1] + height_td), (7, 249, 151), 2)
             # cv2.imshow('pt_td',img_rgb)
             # cv2.waitKey(0)
             logger.debug("td matched: %s", pt_td)
-            td_topleft = (int(pt_td[0]),int(pt_td[1]))
-            return pt_td
-        else:
-            td_topleft = None
-            logger.debug("td unmatched")
-            return None
+            self.td_topleft = (int(pt_td[0]),int(pt_td[1]))
 
-    def detect_td_line(self, pt_td):
+        else:
+            logger.debug("td unmatched")
+            self.td_topleft = None
+
+
+    def detect_td_line(self):
         img_rgb = cv2.imread('./imgout_Lmfd.jpg')
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         gaus = cv2.GaussianBlur(img_gray, (3, 3), 0)
@@ -265,14 +268,15 @@ class ImageProcessor:
         # print self.wide_td,self.height_td
         # x1,y1,x2,y2 in lines,if each in the high_low,then move td
         for x1, y1, x2, y2 in lines[0]:
-            if ((pt_td[0] + self.wide_td -2< x1 < pt_td[0] + self.wide_td + 40) and (
-                        pt_td[1] - 1 < y1 < pt_td[1] + self.height_td + 24) or (
-                               pt_td[0] + self.wide_td -2< x2 < pt_td[0] + self.wide_td + 40) and (pt_td[1] - 3 < y2 < pt_td[1] + self.height_td  + 22)):
-
-                return 0
+            if (((self.td_topleft[0] + self.wide_td -2 < x1 < self.td_topleft[0] + self.wide_td + 40)
+                    and (self.td_topleft[1] - 1 < y1 < self.td_topleft[1] + self.height_td + 24))
+                or ((self.td_topleft[0] + self.wide_td -2< x2 < self.td_topleft[0] + self.wide_td + 40)
+                    and (self.td_topleft[1] - 3 < y2 < self.td_topleft[1] + self.height_td  + 22))):
+                return True
             else:
                 continue
 
+        return False
 
     # base the random number to move td randomly
     def move_td(self):
@@ -337,20 +341,20 @@ class ImageProcessor:
     #     return high,low
 
     # crop each character and save them for each crop
-    def crop_high(self,pt_td):
+    def crop_high(self):
         global x
         image = Image.open('./imgout_Lmfd.jpg')
-        high_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] -10, pt_td[0] + self.wide_td + 12, pt_td[1] + 14)
+        high_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 12, self.td_topleft[1] + 14)
         region_high1 = image.crop(high_box1)
         region_high1.save('region_high1.jpg')
         # imgname1 = str(x) + 'high1_2' + " .jpg"
         # region_high1.save(imgname1)
-        high_box2 = (pt_td[0] + self.wide_td+10, pt_td[1] -10, pt_td[0] + self.wide_td + 24, pt_td[1] + 14)
+        high_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 24, self.td_topleft[1] + 14)
         region_high2 = image.crop(high_box2)
         region_high2.save('region_high2.jpg')
         # imgname2 = str(x) + 'high2_2' + " .jpg"
         # region_high2.save(imgname2)
-        high_box3 = (pt_td[0] + self.wide_td+23, pt_td[1] -10, pt_td[0] + self.wide_td + 37, pt_td[1] + 14)
+        high_box3 = (self.td_topleft[0] + self.wide_td+23, self.td_topleft[1] -10, self.td_topleft[0] + self.wide_td + 37, self.td_topleft[1] + 14)
         region_high3 = image.crop(high_box3)
         region_high3.save('region_high3.jpg')
         # imgname3 = str(x) + 'high3_2' + " .jpg"
@@ -358,23 +362,26 @@ class ImageProcessor:
         x = x+1
 
     # crop each character and save them for each crop
-    def crop_low(self,pt_td):
+    def crop_low(self):
         global y
         image = Image.open('./imgout_Lmfd.jpg')
-        low_box1 = (pt_td[0] + self.wide_td-2, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 12, pt_td[1] + self.height_td + 21)
+        low_box1 = (self.td_topleft[0] + self.wide_td-2, self.td_topleft[1] + self.height_td-3,
+                    self.td_topleft[0] + self.wide_td + 12, self.td_topleft[1] + self.height_td + 21)
         region_low1 = image.crop(low_box1)
         region_low1.save('region_low1.jpg')
-        # imgname1 = str(x) + 'low1_2' + " .jpg"
+        # imgname1 = str(x) + 'low1_2' + ".jpg"
         # region_low1.save(imgname1)
-        low_box2 = (pt_td[0] + self.wide_td+10, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 24, pt_td[1] + self.height_td + 21)
+        low_box2 = (self.td_topleft[0] + self.wide_td+10, self.td_topleft[1] + self.height_td-3,
+                    self.td_topleft[0] + self.wide_td + 24, self.td_topleft[1] + self.height_td + 21)
         region_low2 = image.crop(low_box2)
         region_low2.save('region_low2.jpg')
-        # imgname2 = str(x) + 'low2_2' + " .jpg"
+        # imgname2 = str(x) + 'low2_2' + ".jpg"
         # region_low2.save(imgname2)
-        low_box3 = (pt_td[0] + self.wide_td+22, pt_td[1] + self.height_td-3, pt_td[0] + self.wide_td + 36, pt_td[1] + self.height_td + 21)
+        low_box3 = (self.td_topleft[0] + self.wide_td+22, self.td_topleft[1] + self.height_td-3,
+                    self.td_topleft[0] + self.wide_td + 36, self.td_topleft[1] + self.height_td + 21)
         region_low3 = image.crop(low_box3)
         region_low3.save('region_low3.jpg')
-        # imgname3 = str(x) + 'low3_2' + " .jpg"
+        # imgname3 = str(x) + 'low3_2' + ".jpg"
         # region_low3.save(imgname3)
         y = y+1
 
@@ -395,6 +402,7 @@ class ImageProcessor:
             high = rec_high1+rec_high2+rec_high3
             logger.debug("high: %s" % (high))
             return high
+
     def rec_low(self):
         region1 = Image.open('region_low1.jpg')
         region2 = Image.open('region_low2.jpg')
@@ -413,36 +421,15 @@ class ImageProcessor:
             logger.debug("low %s" % (low))
             return low
 
-    def rec_high_low(self,high,low):
-        global td_high, td_low
+    def re_match(self, str_digit):
         # regular expression to remove wrong digit
-        matched_high = re.match('^[-]?\d{2}$', high)
-        matched_low = re.match('^[-]?\d{2}$', low)
-        if matched_high is not None:
-            td_high = int(high)
-            logger.debug("td_high: %s" % (td_high))
-        else:
-            logger.warn('match high fail')
-            td_high = None
+        matched = re.match('^[-]?\d{2}$', str_digit)
 
-        if matched_low is not None:
-            td_low = int(low)
-            logger.debug("td_low: %s" % (td_low))
+        if matched is not None:
+            return int(matched)
         else:
-            logger.warn('match low fail')
-            td_low = None
-
-        if td_high or td_low is None:
-            return True
-        else:
-            return False
-
-        logger.debug('td_high: %d, td_low: %d' % (td_high, td_low))
-
-        if td_high is None or td_low is None:
-            return False
-        else:
-            return True
+            logger.warn('match fail')
+            return None
 
     # match_Index and get the Index_topleft
     def match_Index(self,value=0.75):

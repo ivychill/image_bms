@@ -12,8 +12,8 @@ image_proc = None
 def register_rpc(image_processor):
     global image_proc
     image_proc = image_processor
-    server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
-    # server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
+    # server = SimpleXMLRPCServer(("192.168.24.108", 5001), allow_none=True)
+    server = SimpleXMLRPCServer(("192.168.20.129", 5001), allow_none=True)
     server.register_function(get_td, "get_td")  # 注册is_even函数
     server.register_function(get_td_high_low, "get_td_high_low")
     server.register_function(get_enemy_coord, "get_enemy_coord")
@@ -30,17 +30,16 @@ def register_rpc(image_processor):
 
 def get_td():
     # logger.debug("td_topleft: %s" % (image_processor.td_topleft))
-    return image_processor.td_topleft
+    return image_proc.td_topleft
 
 def get_td_high_low():
     logger.debug("td_high: %s, td_low: %s" % (image_processor.td_high, image_processor.td_low))
-    return image_processor.td_high, image_processor.td_low
+    return image_proc.td_high, image_proc.td_low
 
 def get_enemy_coord():
-    # print type(image_processor.enemy_topleft[0])
-    print image_processor.enemy_topleft
-    # logger.debug("enemy_topleft: %s" % (image_processor.enemy_topleft))
-    return image_processor.enemy_topleft
+    # print image_processor.enemy_topleft
+    logger.debug("enemy_topleft: %s" % (image_proc.enemy_topleft))
+    return image_proc.enemy_topleft
 
 def get_lock_enemy():
     print image_processor.lock_topleft
